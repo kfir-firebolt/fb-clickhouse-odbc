@@ -31,9 +31,6 @@ DataSourceTypeId convertUnparametrizedTypeNameToTypeId(const std::string & type_
     else if (Poco::icompare(type_name, "DateTime") == 0)    return DataSourceTypeId::DateTime;
     else if (Poco::icompare(type_name, "DateTime64") == 0)  return DataSourceTypeId::DateTime64;
     else if (Poco::icompare(type_name, "Decimal") == 0)     return DataSourceTypeId::Decimal;
-    else if (Poco::icompare(type_name, "Decimal32") == 0)   return DataSourceTypeId::Decimal;
-    else if (Poco::icompare(type_name, "Decimal64") == 0)   return DataSourceTypeId::Decimal;
-    else if (Poco::icompare(type_name, "Decimal128") == 0)  return DataSourceTypeId::Decimal;
     else if (Poco::icompare(type_name, "REAL") == 0)     return DataSourceTypeId::Float32;
     // TODO fix packdb to return real instead of float
     else if (Poco::icompare(type_name, "FLOAT") == 0)     return DataSourceTypeId::Float32;
@@ -70,23 +67,12 @@ std::string convertTypeIdToUnparametrizedCanonicalTypeName(DataSourceTypeId type
         case DataSourceTypeId::DateTime:    return "DateTime";
         case DataSourceTypeId::DateTime64:  return "DateTime64";
         case DataSourceTypeId::Decimal:     return "numeric";
-        case DataSourceTypeId::Decimal32:   return "numeric";
-        case DataSourceTypeId::Decimal64:   return "numeric";
-        case DataSourceTypeId::Decimal128:  return "numeric";
-        case DataSourceTypeId::FixedString: return "FixedString";
         case DataSourceTypeId::Float32:     return "real";
         case DataSourceTypeId::Float64:     return "double";
-        case DataSourceTypeId::Int8:        return "Int8";
-        case DataSourceTypeId::Int16:       return "Int16";
         case DataSourceTypeId::Int32:       return "int";
         case DataSourceTypeId::Int64:       return "bigint";
         case DataSourceTypeId::Nothing:     return "Nothing";
         case DataSourceTypeId::String:      return "text";
-        case DataSourceTypeId::UInt8:       return "UInt8";
-        case DataSourceTypeId::UInt16:      return "UInt16";
-        case DataSourceTypeId::UInt32:      return "UInt32";
-        case DataSourceTypeId::UInt64:      return "UInt64";
-        case DataSourceTypeId::UUID:        return "UUID";
         case DataSourceTypeId::Boolean:     return "bool";
         case DataSourceTypeId::Bytea:       return "bytea";
 
