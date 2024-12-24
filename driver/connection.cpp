@@ -8,6 +8,7 @@
 #include <Poco/Net/HTTPClientSession.h>
 #include <Poco/NumberParser.h> // TODO: switch to std
 #include <Poco/URI.h>
+#include <sys/syslog.h>
 
 #if !defined(WORKAROUND_DISABLE_SSL)
 #    include <Poco/Net/AcceptCertificateHandler.h>
@@ -86,7 +87,7 @@ Poco::URI Connection::getUri() const {
     bool default_format_set = false;
 
     for (const auto& parameter : uri.getQueryParameters()) {
-        if (Poco::UTF8::icompare(parameter.first, "default_format") == 0) {
+        if (Poco::UTF8::icompare(parameter.first, "output_format") == 0) {
             default_format_set = true;
         }
         else if (Poco::UTF8::icompare(parameter.first, "database") == 0) {
@@ -95,7 +96,7 @@ Poco::URI Connection::getUri() const {
     }
 
     if (!default_format_set)
-        uri.addQueryParameter("default_format", default_format);
+        uri.addQueryParameter("output_format", default_format);
 
     if (!database_set)
         uri.addQueryParameter("database", database);
@@ -466,7 +467,7 @@ void Connection::setConfiguration(const key_value_map_t & cs_fields, const key_v
             path = uri.getPath();
 
         for (const auto& parameter : uri.getQueryParameters()) {
-            if (Poco::UTF8::icompare(parameter.first, "default_format") == 0) {
+            if (Poco::UTF8::icompare(parameter.first, "output_format") == 0) {
                 default_format = parameter.second;
             }
             else if (Poco::UTF8::icompare(parameter.first, "database") == 0) {
@@ -504,7 +505,7 @@ void Connection::setConfiguration(const key_value_map_t & cs_fields, const key_v
         path = "/" + path;
 
     if (default_format.empty())
-        default_format = "ODBCDriver2";
+        default_format = "TabSeparatedWithNamesAndTypes";
 
     if (database.empty())
         database = "default";
@@ -536,6 +537,17 @@ std::string Connection::buildCredentialsString() const {
     return user_password_base64.str();
 }
 
+std::string Connection::buildJWTString() const {
+    const std::string jwt_token = "jwt";
+    syslog( LOG_INFO, "kfirkfir: jwt token %s", jwt_token.c_str() );
+
+    return jwt_token;
+    // std::ostringstream jwt_oss;
+    // Poco::Base64Encoder base64_encoder(jwt_oss, Poco::BASE64_URL_ENCODING);
+    // base64_encoder << jwt_token;
+    // base64_encoder.close();
+    // return jwt_oss.str();
+}
 std::string Connection::buildUserAgentString() const {
     std::ostringstream user_agent;
     user_agent << "clickhouse-odbc/" << VERSION_STRING << " (" << SYSTEM_STRING << ")";

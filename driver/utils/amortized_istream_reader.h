@@ -50,6 +50,10 @@ public:
         return (raw_stream_.eof() || raw_stream_.fail());
     }
 
+    char top() const {
+        return buffer_[offset_];
+    }
+
     char get() {
         tryPrepare(1);
 

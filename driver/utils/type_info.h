@@ -48,12 +48,12 @@ extern const std::map<std::string, TypeInfo> types_g;
 inline const TypeInfo & type_info_for(const std::string & type) {
     const auto it = types_g.find(type);
     if (it == types_g.end())
-        throw std::runtime_error("unknown type");
+        throw std::runtime_error("unknown type1: " + type);
     return it->second;
 }
 
 enum class DataSourceTypeId {
-    Unknown,
+    Unknown = 0,
     Date,
     DateTime,
     DateTime64,
@@ -63,7 +63,7 @@ enum class DataSourceTypeId {
     Decimal128,
     FixedString,
     Float32,
-    Float64,
+    Float64 = 10,
     Int8,
     Int16,
     Int32,
@@ -73,8 +73,10 @@ enum class DataSourceTypeId {
     UInt8,
     UInt16,
     UInt32,
-    UInt64,
-    UUID
+    UInt64 = 20,
+    UUID,
+    Boolean,
+    Bytea
 };
 
 DataSourceTypeId convertUnparametrizedTypeNameToTypeId(const std::string & type_name);
@@ -567,6 +569,20 @@ struct DataSourceType<DataSourceTypeId::UInt8>
 };
 
 template <>
+struct DataSourceType<DataSourceTypeId::Boolean>
+    : public SimpleTypeWrapper<bool>
+{
+    using SimpleTypeWrapper<bool>::SimpleTypeWrapper;
+};
+
+template <>
+struct DataSourceType<DataSourceTypeId::Bytea>
+    : public SimpleTypeWrapper<std::string>
+{
+    using SimpleTypeWrapper<std::string>::SimpleTypeWrapper;
+};
+
+template <>
 struct DataSourceType<DataSourceTypeId::UInt16>
     : public SimpleTypeWrapper<std::uint16_t>
 {
@@ -855,6 +871,21 @@ namespace value_manip {
                 throw std::runtime_error("Cannot interpret '" + src + "' as unsigned 8-bit integer: value out of range");
 
             dest = static_cast<std::uint8_t>(tmp);
+        }
+    };
+
+    template <>
+        struct from_value<std::string>::to_value<bool> {
+        using DestinationType = bool;
+
+        static inline void convert(const SourceType & src, DestinationType & dest) {
+            std::uint64_t tmp = 0;
+            to_value<std::uint64_t>::convert(src, tmp);
+
+            if (std::numeric_limits<DestinationType>::max() < tmp || tmp < std::numeric_limits<DestinationType>::min())
+                throw std::runtime_error("Cannot interpret '" + src + "' as unsigned 8-bit integer: value out of range");
+
+            dest = static_cast<bool>(tmp);
         }
     };
 
@@ -1301,6 +1332,23 @@ namespace value_manip {
     template <>
     struct from_value<std::uint8_t> {
         using SourceType = std::uint8_t;
+
+        template <typename DestinationType>
+        struct to_value {
+            static inline void convert(const SourceType & src, DestinationType & dest) {
+                if constexpr (std::is_convertible_v<SourceType, DestinationType>) {
+                    dest = src;
+                }
+                else {
+                    convert_via_proxy<std::uint64_t>(src, dest);
+                }
+            }
+        };
+    };
+
+    template <>
+        struct from_value<bool> {
+        using SourceType = bool;
 
         template <typename DestinationType>
         struct to_value {

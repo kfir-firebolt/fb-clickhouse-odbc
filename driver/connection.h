@@ -41,6 +41,7 @@ public: // Configuration fields.
     std::string database;
     bool huge_int_as_string = false;
     std::int32_t stringmaxlength = 0;
+    std::string jwt;
 
 public:
     std::string useragent;
@@ -61,6 +62,9 @@ public:
 
     // Return a Base64 encoded string of "user:password".
     std::string buildCredentialsString() const;
+
+    // Return a JWT autohrization token
+    std::string buildJWTString() const;
 
     // Return a crafted User-Agent string.
     std::string buildUserAgentString() const;

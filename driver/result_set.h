@@ -59,6 +59,8 @@ public:
         DataSourceType< DataSourceTypeId::UInt32      >,
         DataSourceType< DataSourceTypeId::UInt64      >,
         DataSourceType< DataSourceTypeId::UUID        >,
+        DataSourceType< DataSourceTypeId::Boolean     >,
+        DataSourceType< DataSourceTypeId::Bytea       >,
 
         // In case we approach value conversion conservatively...
         WireTypeAnyAsString,
