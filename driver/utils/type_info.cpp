@@ -13,7 +13,7 @@ const std::map<std::string, TypeInfo> types_g = {
     {"real", TypeInfo {"real", false, SQL_REAL, 7, 4}},
     // TODO PG returns SQL_FLOAT for double.
     {"double", TypeInfo {"double", false, SQL_DOUBLE, 15, 8}},
-    {"Decimal", TypeInfo {"DECIMAL", false, SQL_DECIMAL, 1 + 2 + 38, 16}}, // -0.
+    {"numeric", TypeInfo {"numeric", false, SQL_NUMERIC, 1 + 2 + 38, 16}}, // -0.
     {"text", TypeInfo {"text", true, SQL_LONGVARCHAR, TypeInfo::string_max_size, TypeInfo::string_max_size}},
     {"Date", TypeInfo {"DATE", true, SQL_TYPE_DATE, 10, 6}},
     {"DateTime", TypeInfo {"TIMESTAMP", true, SQL_TYPE_TIMESTAMP, 19, 16}},
@@ -31,9 +31,9 @@ DataSourceTypeId convertUnparametrizedTypeNameToTypeId(const std::string & type_
     else if (Poco::icompare(type_name, "DateTime") == 0)    return DataSourceTypeId::DateTime;
     else if (Poco::icompare(type_name, "DateTime64") == 0)  return DataSourceTypeId::DateTime64;
     else if (Poco::icompare(type_name, "Decimal") == 0)     return DataSourceTypeId::Decimal;
-    else if (Poco::icompare(type_name, "Decimal32") == 0)   return DataSourceTypeId::Decimal32;
-    else if (Poco::icompare(type_name, "Decimal64") == 0)   return DataSourceTypeId::Decimal64;
-    else if (Poco::icompare(type_name, "Decimal128") == 0)  return DataSourceTypeId::Decimal128;
+    else if (Poco::icompare(type_name, "Decimal32") == 0)   return DataSourceTypeId::Decimal;
+    else if (Poco::icompare(type_name, "Decimal64") == 0)   return DataSourceTypeId::Decimal;
+    else if (Poco::icompare(type_name, "Decimal128") == 0)  return DataSourceTypeId::Decimal;
     else if (Poco::icompare(type_name, "REAL") == 0)     return DataSourceTypeId::Float32;
     // TODO fix packdb to return real instead of float
     else if (Poco::icompare(type_name, "FLOAT") == 0)     return DataSourceTypeId::Float32;
@@ -69,10 +69,10 @@ std::string convertTypeIdToUnparametrizedCanonicalTypeName(DataSourceTypeId type
         case DataSourceTypeId::Date:        return "Date";
         case DataSourceTypeId::DateTime:    return "DateTime";
         case DataSourceTypeId::DateTime64:  return "DateTime64";
-        case DataSourceTypeId::Decimal:     return "Decimal";
-        case DataSourceTypeId::Decimal32:   return "Decimal32";
-        case DataSourceTypeId::Decimal64:   return "Decimal64";
-        case DataSourceTypeId::Decimal128:  return "Decimal128";
+        case DataSourceTypeId::Decimal:     return "numeric";
+        case DataSourceTypeId::Decimal32:   return "numeric";
+        case DataSourceTypeId::Decimal64:   return "numeric";
+        case DataSourceTypeId::Decimal128:  return "numeric";
         case DataSourceTypeId::FixedString: return "FixedString";
         case DataSourceTypeId::Float32:     return "real";
         case DataSourceTypeId::Float64:     return "double";
@@ -323,6 +323,7 @@ bool isStreamParam(SQLSMALLINT param_io_type) noexcept {
     return false;
 }
 
+// TODO check if this function needs changes, I did not found a path to it
 std::string convertCTypeToDataSourceType(const BoundTypeInfo & type_info) {
         syslog( LOG_INFO, "kfirkfir: in function convertCTypeToDataSourceType");
 
@@ -439,6 +440,7 @@ std::string convertCTypeToDataSourceType(const BoundTypeInfo & type_info) {
 }
 
 std::string convertSQLTypeToDataSourceType(const BoundTypeInfo & type_info) {
+    syslog( LOG_INFO, "kfirkfir: in function convertSQLTypeToDataSourceType");
     const auto set_nullability = [is_nullable = type_info.is_nullable] (const std::string & type_name) {
         return (is_nullable ? "Nullable(" + type_name + ")" : type_name);
     };

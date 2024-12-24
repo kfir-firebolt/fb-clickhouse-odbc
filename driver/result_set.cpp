@@ -66,12 +66,14 @@ void ColumnInfo::assignTypeInfo(const TypeAst & ast, const std::string & default
             }
 
             case DataSourceTypeId::Decimal128: {
-                if (ast.elements.size() != 1)
-                    throw std::runtime_error("Unexpected Decimal128 type specification syntax");
-
-                precision = 38;
-                scale = ast.elements.front().size;
-
+                if (ast.elements.size() && ast.elements.size() == 2) {
+                    precision = ast.elements.front().size;
+                    scale = ast.elements.back().size;
+                } else {
+                    // TODO Firebolt default should not written here as hardcoded
+                    precision = 38;
+                    scale = 9;
+                }
                 break;
             }
 
@@ -113,13 +115,6 @@ void ColumnInfo::updateTypeInfo() {
             auto tmp_type_name = convertTypeIdToUnparametrizedCanonicalTypeName(type_without_parameters_id);
             syslog( LOG_INFO, "kfirkfir: in function ColumnInfo::updateTypeInfo:3");
 
-            if (
-                type_without_parameters_id == DataSourceTypeId::Decimal32 ||
-                type_without_parameters_id == DataSourceTypeId::Decimal64 ||
-                type_without_parameters_id == DataSourceTypeId::Decimal128
-            ) {
-                tmp_type_name = "Decimal";
-            }
 
             auto & type_info = type_info_for(tmp_type_name);
             syslog( LOG_INFO, "kfirkfir: in function ColumnInfo::updateTypeInfo:4");

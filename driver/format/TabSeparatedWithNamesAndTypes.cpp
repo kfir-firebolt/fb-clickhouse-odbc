@@ -169,80 +169,41 @@ void TabSeparatedWithNamesAndTypesResultSet::readValue(Field & dest, ColumnInfo 
 }
 
 void TabSeparatedWithNamesAndTypesResultSet::readValue(WireTypeDateAsInt & dest, ColumnInfo & column_info, const std::string & value) {
-    readPOD(dest.value);
+    // readPOD(dest.value);
 }
 
 void TabSeparatedWithNamesAndTypesResultSet::readValue(WireTypeDateTimeAsInt & dest, ColumnInfo & column_info, const std::string & value) {
-    readPOD(dest.value);
+    // readPOD(dest.value);
 }
 
 void TabSeparatedWithNamesAndTypesResultSet::readValue(WireTypeDateTime64AsInt & dest, ColumnInfo & column_info, const std::string & value) {
-    readPOD(dest.value);
+    // readPOD(dest.value);
 }
 
 void TabSeparatedWithNamesAndTypesResultSet::readValue(DataSourceType<DataSourceTypeId::Date> & dest, ColumnInfo & column_info, const std::string & value) {
     WireTypeDateAsInt dest_raw(column_info.timezone);
-    readValue(dest_raw, column_info);
+    // readValue(dest_raw, column_info);
     value_manip::from_value<decltype(dest_raw)>::template to_value<decltype(dest)>::convert(dest_raw, dest);
 }
 
 void TabSeparatedWithNamesAndTypesResultSet::readValue(DataSourceType<DataSourceTypeId::DateTime> & dest, ColumnInfo & column_info, const std::string & value) {
     WireTypeDateTimeAsInt dest_raw(column_info.timezone);
-    readValue(dest_raw, column_info);
+    // readValue(dest_raw, column_info);
     value_manip::from_value<decltype(dest_raw)>::template to_value<decltype(dest)>::convert(dest_raw, dest);
 }
 
 void TabSeparatedWithNamesAndTypesResultSet::readValue(DataSourceType<DataSourceTypeId::DateTime64> & dest, ColumnInfo & column_info, const std::string & value) {
     WireTypeDateTime64AsInt dest_raw(column_info.precision, column_info.timezone);
-    readValue(dest_raw, column_info);
+    // readValue(dest_raw, column_info);
     value_manip::from_value<decltype(dest_raw)>::template to_value<decltype(dest)>::convert(dest_raw, dest);
 }
 
 void TabSeparatedWithNamesAndTypesResultSet::readValue(DataSourceType<DataSourceTypeId::Decimal> & dest, ColumnInfo & column_info, const std::string & value) {
+    value_manip::from_value<std::string>::template to_value<DataSourceType<DataSourceTypeId::Decimal>>::convert(value, dest);
+
+    // Override the CH implementation of the conversion to support the full range of decimal always (don't shrink the value)
     dest.precision = column_info.precision;
     dest.scale = column_info.scale;
-
-    if (dest.precision < 10) {
-        std::int32_t value = 0;
-        readPOD(value);
-
-        if (value < 0) {
-            dest.sign = 0;
-            dest.value = -value;
-        }
-        else {
-            dest.sign = 1;
-            dest.value = value;
-        }
-    }
-    else if (dest.precision < 19) {
-        std::int64_t value = 0;
-        readPOD(value);
-
-        if (value < 0) {
-            dest.sign = 0;
-            dest.value = -value;
-        }
-        else {
-            dest.sign = 1;
-            dest.value = value;
-        }
-    }
-    else {
-        throw std::runtime_error("Unable to decode value of type 'Decimal' that is represented by 128-bit integer");
-    }
-}
-
-void TabSeparatedWithNamesAndTypesResultSet::readValue(DataSourceType<DataSourceTypeId::Decimal32> & dest, ColumnInfo & column_info, const std::string & value) {
-    return readValue(static_cast<DataSourceType<DataSourceTypeId::Decimal> &>(dest), column_info);
-}
-
-void TabSeparatedWithNamesAndTypesResultSet::readValue(DataSourceType<DataSourceTypeId::Decimal64> & dest, ColumnInfo & column_info, const std::string & value) {
-    return readValue(static_cast<DataSourceType<DataSourceTypeId::Decimal> &>(dest), column_info);
-}
-
-void TabSeparatedWithNamesAndTypesResultSet::readValue(DataSourceType<DataSourceTypeId::Decimal128> & dest, ColumnInfo & column_info, const std::string & value) {
-    return readValue(static_cast<DataSourceType<DataSourceTypeId::Decimal> &>(dest), column_info);
 }
 
 void TabSeparatedWithNamesAndTypesResultSet::readValue(DataSourceType<DataSourceTypeId::Float32> & dest, ColumnInfo & column_info, const std::string & value) {
