@@ -41,6 +41,8 @@ add_contrib (unixodbc-cmake unixodbc)
 add_contrib (nanodbc-cmake nanodbc)
 add_contrib (lz4-cmake lz4)
 add_contrib (double-conversion-cmake double-conversion)
+add_contrib (odbc-cpp-wrapper-cmake odbc-cpp-wrapper)
+add_contrib (curl-cmake curl)
 
 if (OS_DARWIN OR OS_LINUX)
     add_contrib (openssl-cmake openssl)
@@ -72,8 +74,10 @@ if (CH_ODBC_ENABLE_TESTING)
         set_target_properties (gtest_main PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
         set_target_properties (gmock      PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
         set_target_properties (gmock_main PROPERTIES INTERPROCEDURAL_OPTIMIZATION OFF)
+
     endif ()
 endif ()
+add_subdirectory (nlohmann_json)
 
 # Some of the above may define this target.
 if (TARGET uninstall AND CMAKE_FOLDER)

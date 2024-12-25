@@ -27,6 +27,8 @@
 #define INI_CALOCATION      "CALocation"
 #define INI_PATH            "Path"            /* Path portion of the URL */
 #define INI_DATABASE        "Database"        /* Database Name */
+#define INI_ACCOUNT         "Account"        /* Account Name */
+
 #define INI_HUGE_INT_AS_STRING "HugeIntAsString"
 #define INI_STRINGMAXLENGTH "StringMaxLength"
 #define INI_DRIVERLOG       "DriverLog"

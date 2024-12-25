@@ -1,3 +1,4 @@
+set(ODBC_STATIC)
 function (declare_odbc_test_targets libname UNICODE)
     if (UNICODE)
         set (WIDECHAR_SUFFIX w)
@@ -18,11 +19,13 @@ function (declare_odbc_test_targets libname UNICODE)
         buffer_filling_ut.cpp
         connection_string_ut.cpp
         performance_ut.cpp
+        fb_types.cpp
     )
 
     target_link_libraries (${libname}-ut
-        PRIVATE ${libname}-impl
-        PRIVATE gtest
+        PUBLIC ${libname}-impl
+        PUBLIC gtest
+        PUBLIC ch_contrib::odbc_cpp_wrapper
     )
 
     add_test (NAME ${libname}-ut COMMAND ${libname}-ut)

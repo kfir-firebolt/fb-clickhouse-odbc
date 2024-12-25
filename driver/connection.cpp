@@ -8,7 +8,11 @@
 #include <Poco/Net/HTTPClientSession.h>
 #include <Poco/NumberParser.h> // TODO: switch to std
 #include <Poco/URI.h>
+#include <Poco/Net/HTTPRequest.h>
+#include <crypto/poly1305.h>
 #include <sys/syslog.h>
+#include <curl/curl.h>
+#include <nlohmann/json.hpp>
 
 #if !defined(WORKAROUND_DISABLE_SSL)
 #    include <Poco/Net/AcceptCertificateHandler.h>
@@ -69,6 +73,10 @@ const TypeInfo & Connection::getTypeInfo(const std::string & type_name, const st
 }
 
 Poco::URI Connection::getUri() const {
+    syslog( LOG_INFO, "kfirkfir: in function Connection::getUri: url: %s", url.c_str());
+    // if (!url.empty()) {
+    //     return Poco::URI(url);
+    // }
     Poco::URI uri(url);
 
     if (!proto.empty())
@@ -98,8 +106,9 @@ Poco::URI Connection::getUri() const {
     if (!default_format_set)
         uri.addQueryParameter("output_format", default_format);
 
-    if (!database_set)
-        uri.addQueryParameter("database", database);
+    // TODO set database after use database command
+    // if (!database_set)
+    //     uri.addQueryParameter("database", database_name);
 
     return uri;
 }
@@ -160,7 +169,9 @@ void Connection::connect(const std::string & connection_string) {
 
     resetConfiguration();
     setConfiguration(cs_fields, dsn_fields);
-
+    getJwtToken();
+    syslog( LOG_INFO, "kfirkfir: in function Connection::connect: finally connected. jwt: %s", jwt.c_str());
+    connectToSystemEngine();
     LOG("Creating session with " << proto << "://" << server << ":" << port);
 
 #if !defined(WORKAROUND_DISABLE_SSL)
@@ -178,10 +189,12 @@ void Connection::connect(const std::string & connection_string) {
         std::make_unique<Poco::Net::HTTPClientSession>()
     );
 
+    syslog( LOG_INFO, "kfirkfir: in function Connection::connect: setting host to: %s", server.c_str());
     session->setHost(server);
-    session->setPort(port);
+    // session->setPort(port);
     session->setKeepAlive(true);
     session->setTimeout(Poco::Timespan(connection_timeout, 0), Poco::Timespan(timeout, 0), Poco::Timespan(timeout, 0));
+    // TODO check if we want 12 hours instead of 24 hours
     session->setKeepAliveTimeout(Poco::Timespan(86400, 0));
 
     if (verify_connection_early) {
@@ -204,8 +217,9 @@ void Connection::resetConfiguration() {
     certificateFile.clear();
     caLocation.clear();
     path.clear();
-    default_format.clear();
-    database.clear();
+    // default_format.clear();
+    database_name.clear();
+    engine_name.clear();
     stringmaxlength = 0;
 }
 
@@ -249,6 +263,7 @@ void Connection::setConfiguration(const key_value_map_t & cs_fields, const key_v
                 password = value;
             }
         }
+        // TODO dont allow proto, use https always
         else if (Poco::UTF8::icompare(key, INI_PROTO) == 0) {
             recognized_key = true;
             valid_value = (
@@ -265,9 +280,10 @@ void Connection::setConfiguration(const key_value_map_t & cs_fields, const key_v
             Poco::UTF8::icompare(key, INI_HOST) == 0
         ) {
             recognized_key = true;
-            valid_value = true;
+            valid_value = Poco::UTF8::icompare(value, "localhost") == 0 || Poco::UTF8::icompare(value, "staging") == 0;
             if (valid_value) {
-                server = value;
+                server = "api." + value + ".firebolt.io";
+                env = value;
             }
         }
         else if (Poco::UTF8::icompare(key, INI_PORT) == 0) {
@@ -344,7 +360,14 @@ void Connection::setConfiguration(const key_value_map_t & cs_fields, const key_v
             recognized_key = true;
             valid_value = true;
             if (valid_value) {
-                database = value;
+                database_name = value;
+            }
+        }
+        else if (Poco::UTF8::icompare(key, INI_ACCOUNT) == 0) {
+            recognized_key = true;
+            valid_value = true;
+            if (valid_value) {
+                account_name = value;
             }
         }
         else if (Poco::UTF8::icompare(key, INI_HUGE_INT_AS_STRING) == 0) {
@@ -390,6 +413,7 @@ void Connection::setConfiguration(const key_value_map_t & cs_fields, const key_v
         const auto & value = field.second;
 
         if (cs_fields.find(key) != cs_fields.end()) {
+            syslog( LOG_INFO, "kfirkfir: in function DSN: unknown attribute '%s'='%s', unused, overriden by the connection string", key.c_str(), value.c_str());
             LOG("DSN: attribute '" << key << " = " << value << "' unused, overriden by the connection string");
         }
         else {
@@ -402,6 +426,7 @@ void Connection::setConfiguration(const key_value_map_t & cs_fields, const key_v
                     throw std::runtime_error("DSN: bad value '" + value + "' for attribute '" + key + "'");
             }
             else {
+                syslog( LOG_INFO, "kfirkfir: in function DSN: unknown attribute '%s', ignoring", key.c_str());
                 LOG("DSN: unknown attribute '" << key << "', ignoring");
             }
         }
@@ -413,6 +438,7 @@ void Connection::setConfiguration(const key_value_map_t & cs_fields, const key_v
         const auto & value = field.second;
 
         if (dsn_fields.find(key) != dsn_fields.end()) {
+            syslog( LOG_INFO, "kfirkfir: in function Connection string: attribute '%s'='%s', unused, overrides DSN attribute with the same name", key.c_str(), value.c_str());
             LOG("Connection string: attribute '" << key << " = " << value << "' overrides DSN attribute with the same name");
         }
 
@@ -425,34 +451,46 @@ void Connection::setConfiguration(const key_value_map_t & cs_fields, const key_v
                 throw std::runtime_error("Connection string: bad value '" + value + "' for attribute '" + key + "'");
         }
         else {
+            syslog( LOG_INFO, "kfirkfir: in function Connection string: unknown attribute '%s', ignoring", key.c_str());
             LOG("Connection string: unknown attribute '" << key << "', ignoring");
         }
     }
 
     // Deduce and set all the remaining attributes that are still carrying the default/unintialized values. (This will overwrite only some of the defaults.)
 
-    if (dsn.empty())
+    if (dsn.empty()) {
+        syslog( LOG_INFO, "kfirkfir: in function Connection::setConfiguration: DSN is empty");
         dsn = INI_DSN_DEFAULT;
+    }
 
+
+    // Should be internal use only. Enforce somehow
     if (!url.empty()) {
+        std::set<std::string> allowed_urls = {"https://api.staging.firebolt.io/", "https://api.app.firebolt.io/"};
+        if (allowed_urls.find(url) == allowed_urls.end()) {
+            throw std::runtime_error("URL is not allowed");
+        }
         Poco::URI uri(url);
 
         if (proto.empty())
             proto = uri.getScheme();
 
-        const auto & user_info = uri.getUserInfo();
-        const auto index = user_info.find(':');
-        if (index != std::string::npos) {
-            if (password.empty())
-                password = user_info.substr(index + 1);
+        // TODO check if we want to pass the username and password in the url instead of UID and PWD.
+        // const auto & user_info = uri.getUserInfo();
+        // const auto index = user_info.find(':');
+        // if (index != std::string::npos) {
+        //     if (password.empty())
+        //         password = user_info.substr(index + 1);
+        //
+        //     if (username.empty())
+        //         username = user_info.substr(0, index);
+        // }
 
-            if (username.empty())
-                username = user_info.substr(0, index);
-        }
-
-        if (server.empty())
+        // TODO do we need to take server from the url or from the connection string (SERVER) param?
+        // if (server.empty())
             server = uri.getHost();
 
+        // TODO what is port?
         if (port == 0) {
             // TODO(dakovalkov): This doesn't work when you explicitly set 80 for http and 443 for https due to Poco's getPort() behavior.
             const auto tmp_port = uri.getPort();
@@ -467,13 +505,20 @@ void Connection::setConfiguration(const key_value_map_t & cs_fields, const key_v
             path = uri.getPath();
 
         for (const auto& parameter : uri.getQueryParameters()) {
-            if (Poco::UTF8::icompare(parameter.first, "output_format") == 0) {
-                default_format = parameter.second;
+            // dont allow custom format
+            // if (Poco::UTF8::icompare(parameter.first, "output_format") == 0) {
+            //     default_format = parameter.second;
+            // }
+            /*else*/ if (Poco::UTF8::icompare(parameter.first, "database_name") == 0) {
+                database_name = parameter.second;
             }
-            else if (Poco::UTF8::icompare(parameter.first, "database") == 0) {
-                database = parameter.second;
+            else if (Poco::UTF8::icompare(parameter.first, "engine_name") == 0) {
+                engine_name = parameter.second;
             }
         }
+    } else {
+        // Setting server to default value
+        server = "api." + env + ".firebolt.io";
     }
 
     if (proto.empty()) {
@@ -489,8 +534,11 @@ void Connection::setConfiguration(const key_value_map_t & cs_fields, const key_v
     if (server.empty())
         server = "localhost";
 
-    if (port == 0)
+    if (port == 0) {
         port = (Poco::UTF8::icompare(proto, "https") == 0 ? 8443 : 8123);
+        syslog( LOG_INFO, "kfirkfir: in function Connection::setConfiguration: setting port to: %d", port);
+    }
+
 
     if (timeout == 0)
         timeout = 30;
@@ -504,14 +552,90 @@ void Connection::setConfiguration(const key_value_map_t & cs_fields, const key_v
     if (path[0] != '/')
         path = "/" + path;
 
-    if (default_format.empty())
-        default_format = "TabSeparatedWithNamesAndTypes";
+    // dont allow custom format
+    // if (default_format.empty())
+    //     default_format = "TabSeparatedWithNamesAndTypes";
 
-    if (database.empty())
-        database = "default";
+    // if (database_name.empty())
+    //     database_name = "default";
+
+    // default to system engine?
+    if (engine_name.empty())
+        engine_name = "system";
 
     if (stringmaxlength == 0)
         stringmaxlength = TypeInfo::string_max_size;
+}
+
+static size_t WriteCallback(void* contents, size_t size, size_t nmemb, std::string* output) {
+    const size_t totalSize = size * nmemb;
+    output->append(static_cast<char*>(contents), totalSize);
+    return totalSize;
+}
+
+void Connection::connectToSystemEngine() {
+    CURL* curl = curl_easy_init();
+    if (!curl) {
+        throw std::runtime_error("Failed to initialize curl.");
+    }
+
+    const std::string curl_url = "https://" + server + "/web/v3/account/" + account_name + "/engineUrl";
+    syslog( LOG_INFO, "kfirkfir: in function Connection::connectToSystemEngine: url: %s", curl_url.c_str());
+    curl_easy_setopt(curl, CURLOPT_URL, curl_url.c_str());
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
+
+    std::string response_body;
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response_body);
+
+    const std::string jwt_token = buildJWTString();
+    const std::string auth_header = "Authorization: Bearer " + jwt_token;
+    curl_slist* headers = nullptr;
+    headers = curl_slist_append(headers, auth_header.c_str());
+    headers = curl_slist_append(headers, "Accept: application/json");
+    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+
+    CURLcode res = curl_easy_perform(curl);
+    if (res != CURLE_OK) {
+        throw std::runtime_error("Failed to connect to Firebolt system engine API. Error code: " + std::to_string(res) + ". Error: " + curl_easy_strerror(res));
+    }
+
+    const nlohmann::json response_json = nlohmann::json::parse(std::move(response_body));
+    if (!response_json.contains("engineUrl")) {
+        throw std::runtime_error("Can not find engineUrl in response body: " + response_json.dump());
+    }
+    system_engine_url = response_json["engineUrl"];
+    server = system_engine_url;
+    syslog( LOG_INFO, "kfirkfir: in function Connection::connectToSystemEngine: system engine url: %s", system_engine_url.c_str());
+    curl_easy_cleanup(curl);
+    // TODO check if we need to set the proto to https here
+    proto = "https";
+}
+
+void Connection::getJwtToken() {
+    CURL* curl = curl_easy_init();
+    if (!curl) {
+        throw std::runtime_error("Failed to initialize curl.");
+    }
+    std::string curl_url = "https://id." + env + ".firebolt.io/oauth/token";
+    curl_easy_setopt(curl, CURLOPT_URL, curl_url.c_str());
+    const std::string url_post_fields("audience=https://api.firebolt.io&grant_type=client_credentials&client_id=" + username + "&client_secret=" + password);
+    curl_easy_setopt(curl, CURLOPT_POSTFIELDS, url_post_fields.c_str());
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
+
+    std::string response_body;
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response_body);
+
+    CURLcode res = curl_easy_perform(curl);
+    if (res != CURLE_OK) {
+        throw std::runtime_error("Failed to authenticate with Firebolt API. Error code: " + std::to_string(res));
+    }
+
+    const nlohmann::json response_json = nlohmann::json::parse(std::move(response_body));
+    if (!response_json.contains("access_token")) {
+        throw std::runtime_error("Count not find access_token in response body: " + response_json.dump());
+    }
+    jwt = response_json["access_token"];
+    curl_easy_cleanup(curl);
 }
 
 void Connection::verifyConnection() {
@@ -538,19 +662,11 @@ std::string Connection::buildCredentialsString() const {
 }
 
 std::string Connection::buildJWTString() const {
-    const std::string jwt_token = "jwt";
-    syslog( LOG_INFO, "kfirkfir: jwt token %s", jwt_token.c_str() );
-
-    return jwt_token;
-    // std::ostringstream jwt_oss;
-    // Poco::Base64Encoder base64_encoder(jwt_oss, Poco::BASE64_URL_ENCODING);
-    // base64_encoder << jwt_token;
-    // base64_encoder.close();
-    // return jwt_oss.str();
+    return jwt;
 }
 std::string Connection::buildUserAgentString() const {
     std::ostringstream user_agent;
-    user_agent << "clickhouse-odbc/" << VERSION_STRING << " (" << SYSTEM_STRING << ")";
+    user_agent << "fb-odbc/" << VERSION_STRING << " (" << SYSTEM_STRING << ")";
 #if defined(UNICODE)
     user_agent << " UNICODE";
 #endif

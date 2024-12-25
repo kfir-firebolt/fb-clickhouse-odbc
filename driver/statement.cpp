@@ -134,7 +134,7 @@ void Statement::requestNextPackOfResultSets(std::unique_ptr<ResultMutator> && mu
     request.setHost(uri.getHost());
     request.setURI(uri.getPathEtc());
     request.set("User-Agent", connection.buildUserAgentString());
-    syslog( LOG_INFO, "kfirkfir: in function SQLExecDirect:execution middle13");
+    syslog( LOG_INFO, "kfirkfir: in function SQLExecDirect:execution middle13. requesting with host: %s uri: %s, body: %s. session host: %s", request.getHost().c_str(), request.getURI().c_str(), prepared_query.c_str(), connection.session->getHost().c_str());
 
     LOG(request.getMethod() << " " << request.getHost() << request.getURI() << " body=" << prepared_query
                             << " UA=" << request.get("User-Agent"));
@@ -171,7 +171,7 @@ void Statement::requestNextPackOfResultSets(std::unique_ptr<ResultMutator> && mu
     syslog( LOG_INFO, "kfirkfir: in function SQLExecDirect:execution middle14.0");
 
     Poco::Net::HTTPResponse::HTTPStatus status = response->getStatus();
-    syslog( LOG_INFO, "kfirkfir: in function SQLExecDirect:execution middle14.5");
+    syslog( LOG_INFO, "kfirkfir: in function SQLExecDirect:execution middle14.1");
 
     if (status != Poco::Net::HTTPResponse::HTTP_OK) {
         std::stringstream error_message;
@@ -181,7 +181,7 @@ void Statement::requestNextPackOfResultSets(std::unique_ptr<ResultMutator> && mu
             error_message << "HTTP status code: " << status << std::endl << "Received error:" << std::endl << in->rdbuf() << std::endl;
         }
         LOG(error_message.str());
-        syslog( LOG_INFO, "kfirkfir: in function SQLExecDirect:execution middle14 error: %s", error_message.str().c_str());
+        syslog( LOG_INFO, "kfirkfir: in function SQLExecDirect:execution middle14.2 error: %s", error_message.str().c_str());
 
         throw std::runtime_error(error_message.str());
     }

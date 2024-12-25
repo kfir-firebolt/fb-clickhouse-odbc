@@ -37,8 +37,12 @@ public: // Configuration fields.
     std::string certificateFile;
     std::string caLocation;
     std::string path;
-    std::string default_format;
-    std::string database;
+    const std::string default_format = "TabSeparatedWithNamesAndTypes";
+    std::string env = "app";
+    std::string account_name;
+    std::string database_name;
+    std::string engine_name;
+    std::string system_engine_url;
     bool huge_int_as_string = false;
     std::int32_t stringmaxlength = 0;
     std::string jwt;
@@ -62,6 +66,12 @@ public:
 
     // Return a Base64 encoded string of "user:password".
     std::string buildCredentialsString() const;
+
+    // Get JWT token
+    void getJwtToken();
+
+    // Connect to system engine
+    void connectToSystemEngine();
 
     // Return a JWT autohrization token
     std::string buildJWTString() const;

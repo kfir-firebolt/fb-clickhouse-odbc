@@ -147,7 +147,7 @@ SQLRETURN SQL_API EXPORTED_FUNCTION_MAYBE_W(SQLGetInfo)(
             CASE_STRING(SQL_DATA_SOURCE_NAME, connection.dsn)
             CASE_STRING(SQL_CATALOG_TERM, "catalog")
             CASE_STRING(SQL_COLLATION_SEQ, "UTF-8")
-            CASE_STRING(SQL_DATABASE_NAME, connection.database)
+            CASE_STRING(SQL_DATABASE_NAME, connection.database_name)
             CASE_STRING(SQL_KEYWORDS, "")
             CASE_STRING(SQL_PROCEDURE_TERM, "stored procedure")
             CASE_STRING(SQL_CATALOG_NAME_SEPARATOR, ".")
@@ -412,10 +412,14 @@ SQLRETURN SQL_API EXPORTED_FUNCTION_MAYBE_W(SQLGetInfo)(
 }
 
 SQLRETURN SQL_API EXPORTED_FUNCTION(SQLSetEnvAttr)(SQLHENV handle, SQLINTEGER attribute, SQLPOINTER value, SQLINTEGER value_length) {
+    syslog( LOG_INFO, "kfirkfir: in function %s", "SQLSetEnvAttr");
+
     return impl::SetEnvAttr(handle, attribute, value, value_length);
 }
 
 SQLRETURN SQL_API EXPORTED_FUNCTION_MAYBE_W(SQLSetConnectAttr)(SQLHENV handle, SQLINTEGER attribute, SQLPOINTER value, SQLINTEGER value_length) {
+    syslog( LOG_INFO, "kfirkfir: in function %s", "SQLSetConnectAttr");
+
     return impl::SetConnectAttr(handle, attribute, value, value_length);
 }
 
@@ -427,17 +431,21 @@ SQLRETURN SQL_API EXPORTED_FUNCTION_MAYBE_W(SQLSetStmtAttr)(SQLHENV handle, SQLI
 
 SQLRETURN SQL_API EXPORTED_FUNCTION(SQLGetEnvAttr)(
     SQLHSTMT handle, SQLINTEGER attribute, SQLPOINTER out_value, SQLINTEGER out_value_max_length, SQLINTEGER * out_value_length) {
+    syslog( LOG_INFO, "kfirkfir: in function %s", "SQLGetEnvAttr");
     return impl::GetEnvAttr(handle, attribute, out_value, out_value_max_length, out_value_length);
 }
 
 SQLRETURN SQL_API EXPORTED_FUNCTION_MAYBE_W(SQLGetConnectAttr)(
     SQLHSTMT handle, SQLINTEGER attribute, SQLPOINTER out_value, SQLINTEGER out_value_max_length, SQLINTEGER * out_value_length) {
+    syslog( LOG_INFO, "kfirkfir: in function %s", "SQLGetConnectAttr");
     return impl::GetConnectAttr(handle, attribute, out_value, out_value_max_length, out_value_length);
 }
 
 SQLRETURN SQL_API EXPORTED_FUNCTION_MAYBE_W(SQLGetStmtAttr)(
     SQLHSTMT handle, SQLINTEGER attribute, SQLPOINTER out_value, SQLINTEGER out_value_max_length, SQLINTEGER * out_value_length) {
-    return impl::GetStmtAttr(handle, attribute, out_value, out_value_max_length, out_value_length);
+        syslog( LOG_INFO, "kfirkfir: in function %s", "SQLGetStmtAttr");
+
+        return impl::GetStmtAttr(handle, attribute, out_value, out_value_max_length, out_value_length);
 }
 
 SQLRETURN SQL_API EXPORTED_FUNCTION_MAYBE_W(SQLConnect)(
@@ -449,7 +457,7 @@ SQLRETURN SQL_API EXPORTED_FUNCTION_MAYBE_W(SQLConnect)(
     SQLTCHAR *     Authentication,
     SQLSMALLINT    NameLength3
 ) {
-    syslog( LOG_INFO, "kfirkfir: in function %s", "SQLConnect");
+    syslog( LOG_INFO, "kfirkfir: in function %s", "SQLConnect2");
 
     return CALL_WITH_TYPED_HANDLE(SQL_HANDLE_DBC, ConnectionHandle, [&](Connection & connection) {
         std::string connection_string;
@@ -875,7 +883,7 @@ SQLRETURN SQL_API EXPORTED_FUNCTION_MAYBE_W(SQLTables)(
     auto func = [&](Statement & statement) {
         constexpr bool null_catalog_defaults_to_connected_database = true; // TODO: review and remove this behavior?
         const auto catalog = (CatalogName ? toUTF8(CatalogName, NameLength1) :
-            (null_catalog_defaults_to_connected_database ? statement.getParent().database : SQL_ALL_CATALOGS));
+            (null_catalog_defaults_to_connected_database ? statement.getParent().database_name : SQL_ALL_CATALOGS));
         const auto schema = (SchemaName ? toUTF8(SchemaName, NameLength2) : SQL_ALL_SCHEMAS);
         const auto table = (TableName ? toUTF8(TableName, NameLength3) : "%");
         const auto table_type_list = (TableType ? toUTF8(TableType, NameLength4) : SQL_ALL_TABLE_TYPES);
@@ -1048,7 +1056,7 @@ SQLRETURN SQL_API EXPORTED_FUNCTION_MAYBE_W(SQLColumns)(
     auto func = [&](Statement & statement) {
         constexpr bool null_catalog_defaults_to_connected_database = true; // TODO: review and remove this behavior?
         const auto catalog = (CatalogName ? toUTF8(CatalogName, NameLength1) :
-            (null_catalog_defaults_to_connected_database ? statement.getParent().database : SQL_ALL_CATALOGS));
+            (null_catalog_defaults_to_connected_database ? statement.getParent().database_name : SQL_ALL_CATALOGS));
         const auto schema = (SchemaName ? toUTF8(SchemaName, NameLength2) : SQL_ALL_SCHEMAS);
         const auto table = (TableName ? toUTF8(TableName, NameLength3) : "%");
         const auto column = (ColumnName ? toUTF8(ColumnName, NameLength4) : "%");
