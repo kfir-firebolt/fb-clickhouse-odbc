@@ -5,6 +5,7 @@
 #include <stdexcept>
 #include <sys/syslog.h>
 
+// sql_type_name is the name of the type as returned by the SQL_DESC_TYPE_NAME field of ODBC.
 const std::map<std::string, TypeInfo> types_g = {
     // TODO check what is the correct size for each type
     {"bool", TypeInfo {"bool", true, SQL_VARCHAR, 3, 1}},
