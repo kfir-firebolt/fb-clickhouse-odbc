@@ -10,6 +10,8 @@
 #include <filesystem>
 #include <cstdlib>
 
+// In order to run that unnittest you need to follow this blog: https://medium.com/@murat.bilal/installing-and-configuring-ubuntu-odbc-drivers-for-postgresql-database-c67500e87ead
+// then create a Postgres use with password and write it in the UID and PWD.
 TEST(FBTypes, Literals) {
 odbc::EnvironmentRef env = odbc::Environment::create();
 
