@@ -12,7 +12,7 @@ const std::map<std::string, TypeInfo> types_g = {
     {"bigint", TypeInfo {"bigint", false, SQL_BIGINT, 1 + 19, 8}},
     {"real", TypeInfo {"real", false, SQL_REAL, 7, 4}},
     // TODO PG returns SQL_FLOAT for double.
-    {"double", TypeInfo {"double", false, SQL_DOUBLE, 15, 8}},
+    {"double", TypeInfo {"float8", false, SQL_FLOAT, 15, 8}},
     {"numeric", TypeInfo {"numeric", false, SQL_NUMERIC, 1 + 2 + 38, 16}}, // -0.
     {"text", TypeInfo {"text", true, SQL_LONGVARCHAR, TypeInfo::string_max_size, TypeInfo::string_max_size}},
     {"Date", TypeInfo {"DATE", true, SQL_TYPE_DATE, 10, 6}},
