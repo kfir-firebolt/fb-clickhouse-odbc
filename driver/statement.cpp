@@ -64,6 +64,32 @@ void Statement::executeQuery(std::unique_ptr<ResultMutator> && mutator) {
         *param_set_processed_ptr = 0;
     syslog( LOG_INFO, "kfirkfir: in function SQLExecDirect:execution middle4");
 
+    auto start = query.find_first_not_of(" \t");
+    std::string trimmed_query = query.substr(start);
+    for (size_t i = start; i < trimmed_query.length(); i++) {
+        trimmed_query[i] = std::tolower(trimmed_query[i]);
+    }
+    if (trimmed_query.starts_with("set ")) {
+        syslog( LOG_INFO, "kfirkfir: in function trimming!!!!!!!!!!!!");
+        auto end = trimmed_query.find_last_of(";");
+        trimmed_query = trimmed_query.substr(4, end - 4);
+        std::string removed_whitespace;
+        for (size_t i = 0; i < trimmed_query.length(); i++) {
+            if (trimmed_query[i] != ' ' && trimmed_query[i] != '\t') {
+                removed_whitespace += trimmed_query[i];
+            }
+        }
+        syslog( LOG_INFO, "kfirkfir: in function trimming current query: %s", removed_whitespace.c_str());
+        auto split_pos = removed_whitespace.find_first_of("=");
+        auto key = removed_whitespace.substr(0, split_pos);
+        auto value = removed_whitespace.substr(split_pos + 1);
+        syslog( LOG_INFO, "kfirkfir: in function trimming key: %s, value: %s", key.c_str(), value.c_str());
+
+        auto & connection = getParent();
+        connection.headers[key] = value;
+        return;
+    }
+
     next_param_set_idx = 0;
     requestNextPackOfResultSets(std::move(mutator));
     is_executed = true;
@@ -71,7 +97,7 @@ void Statement::executeQuery(std::unique_ptr<ResultMutator> && mutator) {
 
 void Statement::requestNextPackOfResultSets(std::unique_ptr<ResultMutator> && mutator) {
     result_reader.reset();
-    syslog( LOG_INFO, "kfirkfir: in function SQLExecDirect:execution middle5");
+    syslog( LOG_INFO, "kfirkfir: in function SQLExecDirect:execution middle5. query %s", query.c_str());
 
     const auto param_set_array_size = getEffectiveDescriptor(SQL_ATTR_APP_PARAM_DESC).getAttrAs<SQLULEN>(SQL_DESC_ARRAY_SIZE, 1);
     if (next_param_set_idx >= param_set_array_size)
@@ -182,6 +208,10 @@ void Statement::requestNextPackOfResultSets(std::unique_ptr<ResultMutator> && mu
         }
         LOG(error_message.str());
         syslog( LOG_INFO, "kfirkfir: in function SQLExecDirect:execution middle14.2 error: %s", error_message.str().c_str());
+        // Clear headers on bad request because it might be because of set command and there is no other way to control this
+        if (status == Poco::Net::HTTPResponse::HTTP_BAD_REQUEST) {
+            connection.headers.clear();
+        }
 
         throw std::runtime_error(error_message.str());
     }

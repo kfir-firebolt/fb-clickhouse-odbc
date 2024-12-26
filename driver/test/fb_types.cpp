@@ -27,12 +27,11 @@ odbc::EnvironmentRef env = odbc::Environment::create();
   const char* sa_id = getenv("SA_ID");
   const char* sa_pwd = getenv("SA_PWD");
   std::string conn_str = "DRIVER={ClickHouse ODBC Driver (ANSI)};UID=" + std::string(sa_id) + ";PWD=" + std::string(sa_pwd) + ";SERVER=STAGING;ACCOUNT=developer";
-
   odbc::ConnectionRef fb_conn = env->createConnection();
   fb_conn->connect(conn_str.c_str());
 
   std::vector<std::string> queries = {
-      "select 3::int;",       // int
+      "                                             select 3::int;",       // int
       "select 3::bigint;",    // bigint
       "select 3.4::real;",    // real
       "select 3.4::float;",   // float

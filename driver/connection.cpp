@@ -106,6 +106,10 @@ Poco::URI Connection::getUri() const {
     if (!default_format_set)
         uri.addQueryParameter("output_format", default_format);
 
+    // Add settings params:
+    for (const auto & setting : headers) {
+        uri.addQueryParameter(setting.first, setting.second);
+    }
     // TODO set database after use database command
     // if (!database_set)
     //     uri.addQueryParameter("database", database_name);
@@ -221,6 +225,8 @@ void Connection::resetConfiguration() {
     database_name.clear();
     engine_name.clear();
     stringmaxlength = 0;
+    headers.clear();
+    jwt.clear();
 }
 
 void Connection::setConfiguration(const key_value_map_t & cs_fields, const key_value_map_t & dsn_fields) {

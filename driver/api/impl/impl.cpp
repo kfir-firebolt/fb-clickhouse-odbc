@@ -442,6 +442,9 @@ SQLRETURN GetStmtAttr(
 ) noexcept {
     auto func = [&](Statement & statement) -> SQLRETURN {
         LOG("GetStmtAttr: " << attribute << " out_value=" << out_value << " out_value_max_length=" << out_value_max_length);
+        std::stringstream ss;
+        ss << "GetStmtAttr: " << attribute << " out_value=" << out_value << " out_value_max_length=" << out_value_max_length;
+        syslog( LOG_INFO, "kfirkfir: in function %s attribute %s", "GetStmtAttr", ss.str().c_str());
 
         const char * name = nullptr;
 

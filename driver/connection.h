@@ -46,6 +46,7 @@ public: // Configuration fields.
     bool huge_int_as_string = false;
     std::int32_t stringmaxlength = 0;
     std::string jwt;
+    std::map<std::string, std::string> headers;
 
 public:
     std::string useragent;
