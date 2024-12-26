@@ -92,6 +92,7 @@ Poco::URI Connection::getUri() const {
         uri.setPath(path);
 
     bool database_set = false;
+    bool engine_set = false;
     bool default_format_set = false;
 
     for (const auto& parameter : uri.getQueryParameters()) {
@@ -100,6 +101,9 @@ Poco::URI Connection::getUri() const {
         }
         else if (Poco::UTF8::icompare(parameter.first, "database") == 0) {
             database_set = true;
+        }
+        else if (Poco::UTF8::icompare(parameter.first, "engine") == 0) {
+            engine_set = true;
         }
     }
 
@@ -111,8 +115,11 @@ Poco::URI Connection::getUri() const {
         uri.addQueryParameter(setting.first, setting.second);
     }
     // TODO set database after use database command
-    // if (!database_set)
-    //     uri.addQueryParameter("database", database_name);
+    if (!database_set && !database_name.empty())
+        uri.addQueryParameter("database", database_name);
+
+    if (!engine_set && !engine_name.empty())
+        uri.addQueryParameter("engine", engine_name);
 
     return uri;
 }
@@ -376,6 +383,21 @@ void Connection::setConfiguration(const key_value_map_t & cs_fields, const key_v
                 account_name = value;
             }
         }
+        else if (Poco::UTF8::icompare(key, INI_ENGINE) == 0) {
+            recognized_key = true;
+            valid_value = true;
+            if (valid_value) {
+                engine_name = value;
+            }
+        }
+        else if (Poco::UTF8::icompare(key, INI_ENV) == 0) {
+            recognized_key = true;
+            // valid_value = Poco::UTF8::icompare(value, "staging") == 0 || Poco::UTF8::icompare(value, "app") == 0;
+            valid_value = true;
+            if (valid_value) {
+                env = value;
+            }
+        }
         else if (Poco::UTF8::icompare(key, INI_HUGE_INT_AS_STRING) == 0) {
             recognized_key = true;
             valid_value = (value.empty() || isYesOrNo(value));
@@ -470,6 +492,7 @@ void Connection::setConfiguration(const key_value_map_t & cs_fields, const key_v
     }
 
 
+    // TODO Seems completely redundant we might want to remove url support
     // Should be internal use only. Enforce somehow
     if (!url.empty()) {
         std::set<std::string> allowed_urls = {"https://api.staging.firebolt.io/", "https://api.app.firebolt.io/"};
@@ -522,9 +545,6 @@ void Connection::setConfiguration(const key_value_map_t & cs_fields, const key_v
                 engine_name = parameter.second;
             }
         }
-    } else {
-        // Setting server to default value
-        server = "api." + env + ".firebolt.io";
     }
 
     if (proto.empty()) {
@@ -537,8 +557,10 @@ void Connection::setConfiguration(const key_value_map_t & cs_fields, const key_v
     if (username.empty())
         username = "default";
 
-    if (server.empty())
-        server = "localhost";
+
+    // Setting server to default value
+    server = "api." + env + ".firebolt.io";
+
 
     if (port == 0) {
         port = (Poco::UTF8::icompare(proto, "https") == 0 ? 8443 : 8123);
@@ -566,8 +588,8 @@ void Connection::setConfiguration(const key_value_map_t & cs_fields, const key_v
     //     database_name = "default";
 
     // default to system engine?
-    if (engine_name.empty())
-        engine_name = "system";
+    // if (engine_name.empty())
+    //     engine_name = "system";
 
     if (stringmaxlength == 0)
         stringmaxlength = TypeInfo::string_max_size;
