@@ -48,6 +48,62 @@ bool Statement::isExecuted() const {
     return is_executed;
 }
 
+// TODO refactor this function to use absl or boost
+bool Statement::handleSpecialCommands() {
+    auto & connection = getParent();
+
+    auto start = query.find_first_not_of(" \t");
+    std::string trimmed_query = query.substr(start);
+    for (size_t i = 0; i < trimmed_query.length(); i++) {
+        trimmed_query[i] = std::tolower(trimmed_query[i]);
+    }
+    // set key=value
+    if (trimmed_query.starts_with("set ")) {
+        syslog( LOG_INFO, "kfirkfir: in function trimming!!!!!!!!!!!!");
+        auto end = trimmed_query.find_first_of(";");
+        trimmed_query = trimmed_query.substr(4, end - 4);
+        std::string removed_whitespace;
+        for (size_t i = 0; i < trimmed_query.length(); i++) {
+            if (trimmed_query[i] != ' ' && trimmed_query[i] != '\t') {
+                removed_whitespace += trimmed_query[i];
+            }
+        }
+        syslog( LOG_INFO, "kfirkfir: in function trimming current query: %s", removed_whitespace.c_str());
+        auto split_pos = removed_whitespace.find_first_of("=");
+        auto key = removed_whitespace.substr(0, split_pos);
+        auto value = removed_whitespace.substr(split_pos + 1);
+        syslog( LOG_INFO, "kfirkfir: in function trimming key: %s, value: %s", key.c_str(), value.c_str());
+
+        connection.headers[key] = value;
+        return true;
+    }
+    syslog( LOG_INFO, "kfirkfir: in function trimming current query: %s", trimmed_query.c_str());
+    // use engine/database
+    if (trimmed_query.starts_with("use")) {
+        trimmed_query = trimmed_query.substr(3);
+        trimmed_query = trimmed_query.substr(trimmed_query.find_first_not_of(" \t"));
+
+        const auto object_key = trimmed_query.substr(0, trimmed_query.find_first_of(" \t"));
+        trimmed_query = trimmed_query.substr(object_key.size());
+        trimmed_query = trimmed_query.substr(trimmed_query.find_first_not_of(" \t"));
+        const auto object_value = trimmed_query.substr(0, trimmed_query.find_first_of(" \t;"));
+
+        syslog( LOG_INFO, "kfirkfir: in function trimming current object_key: %s object_value: %s", object_key.c_str(), object_value.c_str());
+
+        if (Poco::icompare(object_key, "engine") == 0) {
+            syslog( LOG_INFO, "kfirkfir: in function trimming current query: %s", object_value.c_str());
+            connection.engine_name = object_value;
+            return true;
+        }
+        if (Poco::icompare(object_key, "database") == 0) {
+            syslog( LOG_INFO, "kfirkfir: in function trimming current query: %s", object_value.c_str());
+            connection.database_name = object_value;
+            return true;
+        }
+    }
+    return false;
+}
+
 void Statement::executeQuery(std::unique_ptr<ResultMutator> && mutator) {
     if (!is_prepared)
         throw std::runtime_error("statement not prepared");
@@ -64,29 +120,8 @@ void Statement::executeQuery(std::unique_ptr<ResultMutator> && mutator) {
         *param_set_processed_ptr = 0;
     syslog( LOG_INFO, "kfirkfir: in function SQLExecDirect:execution middle4");
 
-    auto start = query.find_first_not_of(" \t");
-    std::string trimmed_query = query.substr(start);
-    for (size_t i = start; i < trimmed_query.length(); i++) {
-        trimmed_query[i] = std::tolower(trimmed_query[i]);
-    }
-    if (trimmed_query.starts_with("set ")) {
-        syslog( LOG_INFO, "kfirkfir: in function trimming!!!!!!!!!!!!");
-        auto end = trimmed_query.find_last_of(";");
-        trimmed_query = trimmed_query.substr(4, end - 4);
-        std::string removed_whitespace;
-        for (size_t i = 0; i < trimmed_query.length(); i++) {
-            if (trimmed_query[i] != ' ' && trimmed_query[i] != '\t') {
-                removed_whitespace += trimmed_query[i];
-            }
-        }
-        syslog( LOG_INFO, "kfirkfir: in function trimming current query: %s", removed_whitespace.c_str());
-        auto split_pos = removed_whitespace.find_first_of("=");
-        auto key = removed_whitespace.substr(0, split_pos);
-        auto value = removed_whitespace.substr(split_pos + 1);
-        syslog( LOG_INFO, "kfirkfir: in function trimming key: %s, value: %s", key.c_str(), value.c_str());
-
-        auto & connection = getParent();
-        connection.headers[key] = value;
+    // use engine/database, set key=value
+    if (handleSpecialCommands()) {
         return;
     }
 

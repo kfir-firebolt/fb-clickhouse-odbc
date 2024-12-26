@@ -85,6 +85,9 @@ private:
     std::shared_ptr<Descriptor> allocateDescriptor();
     void deallocateDescriptor(std::shared_ptr<Descriptor> & desc);
 
+    // Returns true if there is a special command that needs handling
+    bool handleSpecialCommands();
+
 private:
     std::shared_ptr<Descriptor> implicit_ard;
     std::shared_ptr<Descriptor> implicit_apd;
