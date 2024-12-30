@@ -12,7 +12,7 @@
 #include <map>
 
 #include <cstring>
-#include <internal/numbers.h>
+// #include <internal/numbers.h>
 
 #define lengthof(a) (sizeof(a) / sizeof(a[0]))
 
@@ -477,7 +477,7 @@ struct DataSourceType<DataSourceTypeId::Decimal> {
     // Size of this integer defines the upper bound of the "info" the internal
     // representation can carry.
     // TODO: switch to some 128-bit or even arbitrary-precision unsigned integer type.
-    using ContainerIntType = int128_t;
+    using ContainerIntType = std::uint_fast64_t;
 
     ContainerIntType value = 0;
     std::int8_t sign = 0;

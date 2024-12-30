@@ -1,7 +1,7 @@
 #include "driver/format/TabSeparatedWithNamesAndTypes.h"
 #include "driver/utils/resize_without_initialization.h"
 #include <ctime>
-#include <sys/syslog.h>
+// #include <sys/syslog.h>
 
 
 bool TabSeparatedWithNamesAndTypesResultSet::eol() const {
@@ -15,7 +15,7 @@ void TabSeparatedWithNamesAndTypesResultSet::readString(std::string & out) {
     while (!eol()) {
         const char c = stream.get();
         if (c == '\t') {
-            syslog( LOG_INFO, "kfirkfir: in function readString \\t: %s", out.c_str());
+            //syslog( LOG_INFO, "kfirkfir: in function readString \\t: %s", out.c_str());
             return;
         }
         if (c == '\\') {
@@ -36,7 +36,7 @@ void TabSeparatedWithNamesAndTypesResultSet::readString(std::string & out) {
             out.push_back(c);
         }
     }
-    syslog( LOG_INFO, "kfirkfir: in function readString eol: %s", out.c_str());
+    //syslog( LOG_INFO, "kfirkfir: in function readString eol: %s", out.c_str());
 }
 
 void TabSeparatedWithNamesAndTypesResultSet::readNames() {
@@ -44,7 +44,7 @@ void TabSeparatedWithNamesAndTypesResultSet::readNames() {
     while (!eol()) {
         std::string name;
         readString(name);
-        syslog( LOG_INFO, "kfirkfir: in function readNames:read a name: %s", name.c_str());
+        //syslog( LOG_INFO, "kfirkfir: in function readNames:read a name: %s", name.c_str());
         names.push_back(std::move(name));
 
     }
@@ -66,7 +66,7 @@ TabSeparatedWithNamesAndTypesResultSet::TabSeparatedWithNamesAndTypesResultSet(c
     const std::uint64_t num_columns = columns_info.size();
 
     for (std::size_t i = 0; i < num_columns; ++i) {
-        syslog( LOG_INFO, "kfirkfir: in function TabSeparatedWithNamesAndTypesResultSet:Ctor1");
+        //syslog( LOG_INFO, "kfirkfir: in function TabSeparatedWithNamesAndTypesResultSet:Ctor1");
 
         readString(columns_info[i].type);
 
@@ -86,23 +86,23 @@ TabSeparatedWithNamesAndTypesResultSet::TabSeparatedWithNamesAndTypesResultSet(c
             // Interpret all unparsable types as String.
             columns_info[i].type_without_parameters = "String";
         }
-        syslog( LOG_INFO, "kfirkfir: in function TabSeparatedWithNamesAndTypesResultSet:Ctor2");
+        //syslog( LOG_INFO, "kfirkfir: in function TabSeparatedWithNamesAndTypesResultSet:Ctor2");
 
 
         columns_info[i].updateTypeInfo();
-        syslog( LOG_INFO, "kfirkfir: in function TabSeparatedWithNamesAndTypesResultSet:Ctor3 %s", columns_info[i].type_without_parameters.c_str());
-        syslog( LOG_INFO, "kfirkfir: in function TabSeparatedWithNamesAndTypesResultSet:Ctor3 %d", columns_info[i].type_without_parameters_id);
+        //syslog( LOG_INFO, "kfirkfir: in function TabSeparatedWithNamesAndTypesResultSet:Ctor3 %s", columns_info[i].type_without_parameters.c_str());
+        //syslog( LOG_INFO, "kfirkfir: in function TabSeparatedWithNamesAndTypesResultSet:Ctor3 %d", columns_info[i].type_without_parameters_id);
     }
 
     finished = columns_info.empty();
 }
 
 bool TabSeparatedWithNamesAndTypesResultSet::readNextRow(Row & row) {
-    syslog( LOG_INFO, "kfirkfir: in function TabSeparatedWithNamesAndTypesResultSet:readNextRow start");
+    //syslog( LOG_INFO, "kfirkfir: in function TabSeparatedWithNamesAndTypesResultSet:readNextRow start");
 
     if (stream.eof())
         return false;
-    syslog( LOG_INFO, "kfirkfir: in function TabSeparatedWithNamesAndTypesResultSet:readNextRow start2");
+    //syslog( LOG_INFO, "kfirkfir: in function TabSeparatedWithNamesAndTypesResultSet:readNextRow start2");
 
     for (std::size_t i = 0; i < row.fields.size(); ++i) {
         if (eol()) {
@@ -110,9 +110,9 @@ bool TabSeparatedWithNamesAndTypesResultSet::readNextRow(Row & row) {
         }
         std::string value;
         readString(value);
-        syslog( LOG_INFO, "kfirkfir: in function TabSeparatedWithNamesAndTypesResultSet:readNextRow %s", value.c_str());
+        //syslog( LOG_INFO, "kfirkfir: in function TabSeparatedWithNamesAndTypesResultSet:readNextRow %s", value.c_str());
         readValue(row.fields[i], columns_info[i], value);
-        syslog( LOG_INFO, "kfirkfir: in function TabSeparatedWithNamesAndTypesResultSet:readNextRow finish %lu", i);
+        //syslog( LOG_INFO, "kfirkfir: in function TabSeparatedWithNamesAndTypesResultSet:readNextRow finish %lu", i);
     }
     if (eol()) {
         stream.get();
@@ -127,13 +127,13 @@ bool TabSeparatedWithNamesAndTypesResultSet::isNull(const std::string & value) {
 }
 
 void TabSeparatedWithNamesAndTypesResultSet::readValue(Field & dest, ColumnInfo & column_info, const std::string & value) {
-    syslog( LOG_INFO, "kfirkfir: in function readValue: %s", value.c_str());
+    //syslog( LOG_INFO, "kfirkfir: in function readValue: %s", value.c_str());
 
     auto value_ = string_pool.get();
     value_manip::to_null(value_);
 
     if (isNull(value)) {
-        syslog( LOG_INFO, "kfirkfir: in function readValue: decided nothing");
+        //syslog( LOG_INFO, "kfirkfir: in function readValue: decided nothing");
         dest.data = DataSourceType<DataSourceTypeId::Nothing>{};
         string_pool.put(std::move(value_));
         return;
@@ -242,7 +242,7 @@ void TabSeparatedWithNamesAndTypesResultSet::readValue(DataSourceType<DataSource
 }
 
 void TabSeparatedWithNamesAndTypesResultSet::readValue(DataSourceType<DataSourceTypeId::Boolean> & dest, ColumnInfo & column_info, const std::string & value) {
-    syslog( LOG_INFO, "kfirkfir: in function readValue BOOLEAN: %s", value.c_str());
+    //syslog( LOG_INFO, "kfirkfir: in function readValue BOOLEAN: %s", value.c_str());
     if (value == "f") {
         dest.value = false;
     } else if (value == "t") {
@@ -253,7 +253,7 @@ void TabSeparatedWithNamesAndTypesResultSet::readValue(DataSourceType<DataSource
 }
 
 void TabSeparatedWithNamesAndTypesResultSet::readValue(DataSourceType<DataSourceTypeId::Bytea> & dest, ColumnInfo & column_info, const std::string & value) {
-    syslog( LOG_INFO, "kfirkfir: in function readValue bytea: %s", value.c_str());
+    //syslog( LOG_INFO, "kfirkfir: in function readValue bytea: %s", value.c_str());
     dest.value = value.substr(2);
 }
 

@@ -14,7 +14,7 @@
 
 #include <cctype>
 #include <cstdio>
-#include <sys/syslog.h>
+// #include <sys/syslog.h>
 
 Statement::Statement(Connection & connection)
     : ChildType(connection)
@@ -59,7 +59,7 @@ bool Statement::handleSpecialCommands() {
     }
     // set key=value
     if (trimmed_query.starts_with("set ")) {
-        syslog( LOG_INFO, "kfirkfir: in function trimming!!!!!!!!!!!!");
+        //syslog( LOG_INFO, "kfirkfir: in function trimming!!!!!!!!!!!!");
         auto end = trimmed_query.find_first_of(";");
         trimmed_query = trimmed_query.substr(4, end - 4);
         std::string removed_whitespace;
@@ -68,16 +68,16 @@ bool Statement::handleSpecialCommands() {
                 removed_whitespace += trimmed_query[i];
             }
         }
-        syslog( LOG_INFO, "kfirkfir: in function trimming current query: %s", removed_whitespace.c_str());
+        //syslog( LOG_INFO, "kfirkfir: in function trimming current query: %s", removed_whitespace.c_str());
         auto split_pos = removed_whitespace.find_first_of("=");
         auto key = removed_whitespace.substr(0, split_pos);
         auto value = removed_whitespace.substr(split_pos + 1);
-        syslog( LOG_INFO, "kfirkfir: in function trimming key: %s, value: %s", key.c_str(), value.c_str());
+        //syslog( LOG_INFO, "kfirkfir: in function trimming key: %s, value: %s", key.c_str(), value.c_str());
 
         connection.headers[key] = value;
         return true;
     }
-    syslog( LOG_INFO, "kfirkfir: in function trimming current query: %s", trimmed_query.c_str());
+    //syslog( LOG_INFO, "kfirkfir: in function trimming current query: %s", trimmed_query.c_str());
     // use engine/database
     if (trimmed_query.starts_with("use")) {
         trimmed_query = trimmed_query.substr(3);
@@ -88,15 +88,15 @@ bool Statement::handleSpecialCommands() {
         trimmed_query = trimmed_query.substr(trimmed_query.find_first_not_of(" \t"));
         const auto object_value = trimmed_query.substr(0, trimmed_query.find_first_of(" \t;"));
 
-        syslog( LOG_INFO, "kfirkfir: in function trimming current object_key: %s object_value: %s", object_key.c_str(), object_value.c_str());
+        //syslog( LOG_INFO, "kfirkfir: in function trimming current object_key: %s object_value: %s", object_key.c_str(), object_value.c_str());
 
         if (Poco::icompare(object_key, "engine") == 0) {
-            syslog( LOG_INFO, "kfirkfir: in function trimming current query: %s", object_value.c_str());
+            //syslog( LOG_INFO, "kfirkfir: in function trimming current query: %s", object_value.c_str());
             connection.engine_name = object_value;
             return true;
         }
         if (Poco::icompare(object_key, "database") == 0) {
-            syslog( LOG_INFO, "kfirkfir: in function trimming current query: %s", object_value.c_str());
+            //syslog( LOG_INFO, "kfirkfir: in function trimming current query: %s", object_value.c_str());
             connection.database_name = object_value;
             return true;
         }
@@ -107,18 +107,18 @@ bool Statement::handleSpecialCommands() {
 void Statement::executeQuery(std::unique_ptr<ResultMutator> && mutator) {
     if (!is_prepared)
         throw std::runtime_error("statement not prepared");
-    syslog( LOG_INFO, "kfirkfir: in function SQLExecDirect:execution middle2");
+    //syslog( LOG_INFO, "kfirkfir: in function SQLExecDirect:execution middle2");
 
     if (is_executed && is_forward_executed) {
         is_forward_executed = false;
         return;
     }
-    syslog( LOG_INFO, "kfirkfir: in function SQLExecDirect:execution middle3");
+    //syslog( LOG_INFO, "kfirkfir: in function SQLExecDirect:execution middle3");
 
     auto * param_set_processed_ptr = getEffectiveDescriptor(SQL_ATTR_IMP_PARAM_DESC).getAttrAs<SQLULEN *>(SQL_DESC_ROWS_PROCESSED_PTR, 0);
     if (param_set_processed_ptr)
         *param_set_processed_ptr = 0;
-    syslog( LOG_INFO, "kfirkfir: in function SQLExecDirect:execution middle4");
+    //syslog( LOG_INFO, "kfirkfir: in function SQLExecDirect:execution middle4");
 
     // use engine/database, set key=value
     if (handleSpecialCommands()) {
@@ -132,28 +132,28 @@ void Statement::executeQuery(std::unique_ptr<ResultMutator> && mutator) {
 
 void Statement::requestNextPackOfResultSets(std::unique_ptr<ResultMutator> && mutator) {
     result_reader.reset();
-    syslog( LOG_INFO, "kfirkfir: in function SQLExecDirect:execution middle5. query %s", query.c_str());
+    //syslog( LOG_INFO, "kfirkfir: in function SQLExecDirect:execution middle5. query %s", query.c_str());
 
     const auto param_set_array_size = getEffectiveDescriptor(SQL_ATTR_APP_PARAM_DESC).getAttrAs<SQLULEN>(SQL_DESC_ARRAY_SIZE, 1);
     if (next_param_set_idx >= param_set_array_size)
         return;
-    syslog( LOG_INFO, "kfirkfir: in function SQLExecDirect:execution middle6");
+    //syslog( LOG_INFO, "kfirkfir: in function SQLExecDirect:execution middle6");
 
     getDiagHeader().setAttr(SQL_DIAG_ROW_COUNT, 0);
-    syslog( LOG_INFO, "kfirkfir: in function SQLExecDirect:execution middle7");
+    //syslog( LOG_INFO, "kfirkfir: in function SQLExecDirect:execution middle7");
 
     auto & connection = getParent();
-    syslog( LOG_INFO, "kfirkfir: in function SQLExecDirect:execution middle8");
+    //syslog( LOG_INFO, "kfirkfir: in function SQLExecDirect:execution middle8");
 
     if (connection.session && response && in)
         if (in->fail() || !in->eof())
             connection.session->reset();
-    syslog( LOG_INFO, "kfirkfir: in function SQLExecDirect:execution middle9");
+    //syslog( LOG_INFO, "kfirkfir: in function SQLExecDirect:execution middle9");
 
     Poco::URI uri = connection.getUri();
 
     const auto param_bindings = getParamsBindingInfo(next_param_set_idx);
-    syslog( LOG_INFO, "kfirkfir: in function SQLExecDirect:execution middle10");
+    //syslog( LOG_INFO, "kfirkfir: in function SQLExecDirect:execution middle10");
 
     for (std::size_t i = 0; i < parameters.size(); ++i) {
         std::string value;
@@ -176,7 +176,7 @@ void Statement::requestNextPackOfResultSets(std::unique_ptr<ResultMutator> && mu
         const auto param_name = getParamFinalName(i);
         uri.addQueryParameter("param_" + param_name, value);
     }
-    syslog( LOG_INFO, "kfirkfir: in function SQLExecDirect:execution middle11");
+    //syslog( LOG_INFO, "kfirkfir: in function SQLExecDirect:execution middle11");
 
     const auto prepared_query = buildFinalQuery(param_bindings);
 
@@ -184,7 +184,7 @@ void Statement::requestNextPackOfResultSets(std::unique_ptr<ResultMutator> && mu
     auto * param_set_processed_ptr = getEffectiveDescriptor(SQL_ATTR_IMP_PARAM_DESC).getAttrAs<SQLULEN *>(SQL_DESC_ROWS_PROCESSED_PTR, 0);
     if (param_set_processed_ptr)
         *param_set_processed_ptr = next_param_set_idx;
-    syslog( LOG_INFO, "kfirkfir: in function SQLExecDirect:execution middle12");
+    //syslog( LOG_INFO, "kfirkfir: in function SQLExecDirect:execution middle12");
 
     Poco::Net::HTTPRequest request;
     request.setMethod(Poco::Net::HTTPRequest::HTTP_POST);
@@ -195,7 +195,7 @@ void Statement::requestNextPackOfResultSets(std::unique_ptr<ResultMutator> && mu
     request.setHost(uri.getHost());
     request.setURI(uri.getPathEtc());
     request.set("User-Agent", connection.buildUserAgentString());
-    syslog( LOG_INFO, "kfirkfir: in function SQLExecDirect:execution middle13. requesting with host: %s uri: %s, body: %s. session host: %s", request.getHost().c_str(), request.getURI().c_str(), prepared_query.c_str(), connection.session->getHost().c_str());
+    //syslog( LOG_INFO, "kfirkfir: in function SQLExecDirect:execution middle13. requesting with host: %s uri: %s, body: %s. session host: %s", request.getHost().c_str(), request.getURI().c_str(), prepared_query.c_str(), connection.session->getHost().c_str());
 
     LOG(request.getMethod() << " " << request.getHost() << request.getURI() << " body=" << prepared_query
                             << " UA=" << request.get("User-Agent"));
@@ -229,10 +229,10 @@ void Statement::requestNextPackOfResultSets(std::unique_ptr<ResultMutator> && mu
                 throw;
         }
     }
-    syslog( LOG_INFO, "kfirkfir: in function SQLExecDirect:execution middle14.0");
+    //syslog( LOG_INFO, "kfirkfir: in function SQLExecDirect:execution middle14.0");
 
     Poco::Net::HTTPResponse::HTTPStatus status = response->getStatus();
-    syslog( LOG_INFO, "kfirkfir: in function SQLExecDirect:execution middle14.1");
+    //syslog( LOG_INFO, "kfirkfir: in function SQLExecDirect:execution middle14.1");
 
     if (status != Poco::Net::HTTPResponse::HTTP_OK) {
         std::stringstream error_message;
@@ -242,7 +242,7 @@ void Statement::requestNextPackOfResultSets(std::unique_ptr<ResultMutator> && mu
             error_message << "HTTP status code: " << status << std::endl << "Received error:" << std::endl << in->rdbuf() << std::endl;
         }
         LOG(error_message.str());
-        syslog( LOG_INFO, "kfirkfir: in function SQLExecDirect:execution middle14.2 error: %s", error_message.str().c_str());
+        //syslog( LOG_INFO, "kfirkfir: in function SQLExecDirect:execution middle14.2 error: %s", error_message.str().c_str());
         // Clear headers on bad request because it might be because of set command and there is no other way to control this
         if (status == Poco::Net::HTTPResponse::HTTP_BAD_REQUEST) {
             connection.headers.clear();
@@ -250,14 +250,14 @@ void Statement::requestNextPackOfResultSets(std::unique_ptr<ResultMutator> && mu
 
         throw std::runtime_error(error_message.str());
     }
-    syslog( LOG_INFO, "kfirkfir: in function SQLExecDirect:execution middle15");
+    //syslog( LOG_INFO, "kfirkfir: in function SQLExecDirect:execution middle15");
 
     result_reader = make_result_reader(
         response->get("X-ClickHouse-Format", connection.default_format),
         response->get("X-ClickHouse-Timezone", Poco::Timezone::name()),
         *in, std::move(mutator)
     );
-    syslog( LOG_INFO, "kfirkfir: in function SQLExecDirect:execution middle16");
+    //syslog( LOG_INFO, "kfirkfir: in function SQLExecDirect:execution middle16");
 
     ++next_param_set_idx;
 }
@@ -407,7 +407,7 @@ std::string Statement::buildFinalQuery(const std::vector<ParamBindingInfo>& para
 
 void Statement::executeQuery(const std::string & q, std::unique_ptr<ResultMutator> && mutator) {
     prepareQuery(q);
-            syslog( LOG_INFO, "kfirkfir: in function SQLExecDirect:execution middle1");
+            //syslog( LOG_INFO, "kfirkfir: in function SQLExecDirect:execution middle1");
 executeQuery(std::move(mutator));
 }
 

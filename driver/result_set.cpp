@@ -3,7 +3,7 @@
 #include "driver/format/RowBinaryWithNamesAndTypes.h"
 #include "driver/format/TabSeparatedWithNamesAndTypes.h"
 
-#include <sys/syslog.h>
+// #include <sys/syslog.h>
 
 const std::string::size_type initial_string_capacity_g = std::string{}.capacity();
 
@@ -96,9 +96,9 @@ void ColumnInfo::assignTypeInfo(const TypeAst & ast, const std::string & default
 }
 
 void ColumnInfo::updateTypeInfo() {
-    syslog( LOG_INFO, "kfirkfir: in function ColumnInfo::updateTypeInfo:1 %s", type_without_parameters.c_str());
+    //syslog( LOG_INFO, "kfirkfir: in function ColumnInfo::updateTypeInfo:1 %s", type_without_parameters.c_str());
     type_without_parameters_id = convertUnparametrizedTypeNameToTypeId(type_without_parameters);
-    syslog( LOG_INFO, "kfirkfir: in function ColumnInfo::updateTypeInfo:2 %d", type_without_parameters_id);
+    //syslog( LOG_INFO, "kfirkfir: in function ColumnInfo::updateTypeInfo:2 %d", type_without_parameters_id);
 
     switch (type_without_parameters_id) {
         case DataSourceTypeId::FixedString: {
@@ -113,11 +113,11 @@ void ColumnInfo::updateTypeInfo() {
 
         default: {
             auto tmp_type_name = convertTypeIdToUnparametrizedCanonicalTypeName(type_without_parameters_id);
-            syslog( LOG_INFO, "kfirkfir: in function ColumnInfo::updateTypeInfo:3");
+            //syslog( LOG_INFO, "kfirkfir: in function ColumnInfo::updateTypeInfo:3");
 
 
             auto & type_info = type_info_for(tmp_type_name);
-            syslog( LOG_INFO, "kfirkfir: in function ColumnInfo::updateTypeInfo:4");
+            //syslog( LOG_INFO, "kfirkfir: in function ColumnInfo::updateTypeInfo:4");
 
             display_size = type_info.column_size;
             break;
@@ -328,7 +328,7 @@ std::unique_ptr<ResultMutator> ResultReader::releaseMutator() {
 
 std::unique_ptr<ResultReader> make_result_reader(const std::string & format, const std::string & timezone, std::istream & raw_stream, std::unique_ptr<ResultMutator> && mutator) {
     if (format == "TabSeparatedWithNamesAndTypes") {
-            syslog( LOG_INFO, "kfirkfir: in function make_result_reader FORMAT=TabSeparatedWithNamesAndTypes");
+            //syslog( LOG_INFO, "kfirkfir: in function make_result_reader FORMAT=TabSeparatedWithNamesAndTypes");
         return std::make_unique<TabSeparatedWithNamesAndTypesResultReader>(timezone, raw_stream, std::move(mutator));
 
     }

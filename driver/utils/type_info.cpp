@@ -3,7 +3,7 @@
 #include <Poco/String.h>
 
 #include <stdexcept>
-#include <sys/syslog.h>
+// #include <sys/syslog.h>
 
 // sql_type_name is the name of the type as returned by the SQL_DESC_TYPE_NAME field of ODBC.
 const std::map<std::string, TypeInfo> types_g = {
@@ -26,7 +26,7 @@ const std::map<std::string, TypeInfo> types_g = {
 
 
 DataSourceTypeId convertUnparametrizedTypeNameToTypeId(const std::string & type_name) {
-    syslog( LOG_INFO, "kfirkfir: in function convertUnparametrizedTypeNameToTypeId: %s", type_name.c_str());
+    //syslog( LOG_INFO, "kfirkfir: in function convertUnparametrizedTypeNameToTypeId: %s", type_name.c_str());
 
          if (Poco::icompare(type_name, "Date") == 0)        return DataSourceTypeId::Date;
     else if (Poco::icompare(type_name, "DateTime") == 0)    return DataSourceTypeId::DateTime;
@@ -312,7 +312,7 @@ bool isStreamParam(SQLSMALLINT param_io_type) noexcept {
 
 // TODO check if this function needs changes, I did not found a path to it
 std::string convertCTypeToDataSourceType(const BoundTypeInfo & type_info) {
-        syslog( LOG_INFO, "kfirkfir: in function convertCTypeToDataSourceType");
+        //syslog( LOG_INFO, "kfirkfir: in function convertCTypeToDataSourceType");
 
     const auto set_nullability = [is_nullable = type_info.is_nullable] (const std::string & type_name) {
         return (is_nullable ? "Nullable(" + type_name + ")" : type_name);
@@ -427,7 +427,7 @@ std::string convertCTypeToDataSourceType(const BoundTypeInfo & type_info) {
 }
 
 std::string convertSQLTypeToDataSourceType(const BoundTypeInfo & type_info) {
-    syslog( LOG_INFO, "kfirkfir: in function convertSQLTypeToDataSourceType");
+    //syslog( LOG_INFO, "kfirkfir: in function convertSQLTypeToDataSourceType");
     const auto set_nullability = [is_nullable = type_info.is_nullable] (const std::string & type_name) {
         return (is_nullable ? "Nullable(" + type_name + ")" : type_name);
     };

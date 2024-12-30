@@ -11,7 +11,7 @@
 #include <exception>
 #include <type_traits>
 #include <new>
-#include <sys/syslog.h>
+// #include <sys/syslog.h>
 
 namespace impl {
 
@@ -46,7 +46,7 @@ SQLRETURN allocStmt(
 ) noexcept {
     return CALL_WITH_TYPED_HANDLE(SQL_HANDLE_DBC, connection_handle, [&] (Connection & connection) {
         if (nullptr == out_statement_handle) {
-    syslog( LOG_INFO, "kfirkfir: in function %s", "SQLAllocHandle:allocStmt:SQL_INVALID_HANDLE");
+    //syslog( LOG_INFO, "kfirkfir: in function %s", "SQLAllocHandle:allocStmt:SQL_INVALID_HANDLE");
             return SQL_INVALID_HANDLE;
 
         }
@@ -444,7 +444,7 @@ SQLRETURN GetStmtAttr(
         LOG("GetStmtAttr: " << attribute << " out_value=" << out_value << " out_value_max_length=" << out_value_max_length);
         std::stringstream ss;
         ss << "GetStmtAttr: " << attribute << " out_value=" << out_value << " out_value_max_length=" << out_value_max_length;
-        syslog( LOG_INFO, "kfirkfir: in function %s attribute %s", "GetStmtAttr", ss.str().c_str());
+        //syslog( LOG_INFO, "kfirkfir: in function %s attribute %s", "GetStmtAttr", ss.str().c_str());
 
         const char * name = nullptr;
 
@@ -1320,15 +1320,15 @@ SQLRETURN fetchBindings(
 
         return SQL_NO_DATA;
     }
-    syslog( LOG_INFO, "kfirkfir: in function fetchBindings1");
+    //syslog( LOG_INFO, "kfirkfir: in function fetchBindings1");
 
     auto & result_set = statement.getResultSet();
-    syslog( LOG_INFO, "kfirkfir: in function fetchBindings2");
+    //syslog( LOG_INFO, "kfirkfir: in function fetchBindings2");
     const auto rows_fetched = result_set.fetchRowSet(orientation, offset, row_set_size);
-    syslog( LOG_INFO, "kfirkfir: in function fetchBindings3");
+    //syslog( LOG_INFO, "kfirkfir: in function fetchBindings3");
 
     if (rows_fetched == 0) {
-        syslog( LOG_INFO, "kfirkfir: in function fetchBindings4");
+        //syslog( LOG_INFO, "kfirkfir: in function fetchBindings4");
 
         statement.getDiagHeader().setAttr(SQL_DIAG_ROW_COUNT, result_set.getAffectedRowCount());
 
@@ -1340,7 +1340,7 @@ SQLRETURN fetchBindings(
 
         return SQL_NO_DATA;
     }
-    syslog( LOG_INFO, "kfirkfir: in function fetchBindings5");
+    //syslog( LOG_INFO, "kfirkfir: in function fetchBindings5");
 
     if (rows_fetched_ptr)
         *rows_fetched_ptr = rows_fetched;
@@ -1363,7 +1363,7 @@ SQLRETURN fetchBindings(
             throw std::bad_alloc();
         std::fill(base_bindings, base_bindings + ard_record_count, BindingInfo{});
     }
-    syslog( LOG_INFO, "kfirkfir: in function fetchBindings6");
+    //syslog( LOG_INFO, "kfirkfir: in function fetchBindings6");
 
     // Prepare the base binding info for all columns before iterating over the row set.
     for (std::size_t column_num = 1; column_num <= ard_record_count; ++column_num) { // Skipping the bookmark (0) column.

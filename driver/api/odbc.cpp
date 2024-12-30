@@ -23,7 +23,7 @@
 #include <cstdio>
 #include <cstring>
 #include <log.h>
-#include <sys/syslog.h>
+// #include <sys/syslog.h>
 
 /** Functions from the ODBC interface can not directly call other functions.
   * Because not a function from this library will be called, but a wrapper from the driver manager,
@@ -39,20 +39,20 @@ extern "C" {
 
 SQLRETURN SQL_API EXPORTED_FUNCTION(SQLAllocHandle)(SQLSMALLINT handle_type, SQLHANDLE input_handle, SQLHANDLE * output_handle) {
     LOG(__FUNCTION__ << " handle_type=" << handle_type << " input_handle=" << input_handle);
-    syslog( LOG_INFO, "kfirkfir: in function %s", "SQLAllocHandle");
+    //syslog( LOG_INFO, "kfirkfir: in function %s", "SQLAllocHandle");
 
     switch (handle_type) {
         case SQL_HANDLE_ENV:
-              syslog( LOG_INFO, "kfirkfir: in function %s", "SQLAllocHandle:SQL_HANDLE_ENV");
+              //syslog( LOG_INFO, "kfirkfir: in function %s", "SQLAllocHandle:SQL_HANDLE_ENV");
   return impl::allocEnv((SQLHENV *)output_handle);
         case SQL_HANDLE_DBC:
-           syslog( LOG_INFO, "kfirkfir: in function %s", "SQLAllocHandle:SQL_HANDLE_DBC");
+           //syslog( LOG_INFO, "kfirkfir: in function %s", "SQLAllocHandle:SQL_HANDLE_DBC");
      return impl::allocConnect((SQLHENV)input_handle, (SQLHDBC *)output_handle);
         case SQL_HANDLE_STMT:
-           syslog( LOG_INFO, "kfirkfir: in function %s", "SQLAllocHandle:SQL_HANDLE_STMT");
+           //syslog( LOG_INFO, "kfirkfir: in function %s", "SQLAllocHandle:SQL_HANDLE_STMT");
      return impl::allocStmt((SQLHDBC)input_handle, (SQLHSTMT *)output_handle);
         case SQL_HANDLE_DESC:
-           syslog( LOG_INFO, "kfirkfir: in function %s", "SQLAllocHandle:SQL_HANDLE_DESC");
+           //syslog( LOG_INFO, "kfirkfir: in function %s", "SQLAllocHandle:SQL_HANDLE_DESC");
      return impl::allocDesc((SQLHDBC)input_handle, (SQLHDESC *)output_handle);
         default:
             LOG("AllocHandle: Unknown handleType=" << handle_type);
@@ -108,7 +108,7 @@ SQLRETURN SQL_API EXPORTED_FUNCTION_MAYBE_W(SQLGetInfo)(
     SQLSMALLINT *   out_value_length
 ) {
     LOG("GetInfo with info_type: " << info_type << ", out_value_max_length: " << out_value_max_length);
-    syslog( LOG_INFO, "kfirkfir: in function %s", "SQLGetInfo");
+    //syslog( LOG_INFO, "kfirkfir: in function %s", "SQLGetInfo");
 
     /** How are all these values selected?
       * Part of them provides true information about the capabilities of the DBMS.
@@ -412,38 +412,38 @@ SQLRETURN SQL_API EXPORTED_FUNCTION_MAYBE_W(SQLGetInfo)(
 }
 
 SQLRETURN SQL_API EXPORTED_FUNCTION(SQLSetEnvAttr)(SQLHENV handle, SQLINTEGER attribute, SQLPOINTER value, SQLINTEGER value_length) {
-    syslog( LOG_INFO, "kfirkfir: in function %s", "SQLSetEnvAttr");
+    //syslog( LOG_INFO, "kfirkfir: in function %s", "SQLSetEnvAttr");
 
     return impl::SetEnvAttr(handle, attribute, value, value_length);
 }
 
 SQLRETURN SQL_API EXPORTED_FUNCTION_MAYBE_W(SQLSetConnectAttr)(SQLHENV handle, SQLINTEGER attribute, SQLPOINTER value, SQLINTEGER value_length) {
-    syslog( LOG_INFO, "kfirkfir: in function %s", "SQLSetConnectAttr");
+    //syslog( LOG_INFO, "kfirkfir: in function %s", "SQLSetConnectAttr");
 
     return impl::SetConnectAttr(handle, attribute, value, value_length);
 }
 
 SQLRETURN SQL_API EXPORTED_FUNCTION_MAYBE_W(SQLSetStmtAttr)(SQLHENV handle, SQLINTEGER attribute, SQLPOINTER value, SQLINTEGER value_length) {
-    syslog( LOG_INFO, "kfirkfir: in function %s", "SQLSetStmtAttr");
+    //syslog( LOG_INFO, "kfirkfir: in function %s", "SQLSetStmtAttr");
 
     return impl::SetStmtAttr(handle, attribute, value, value_length);
 }
 
 SQLRETURN SQL_API EXPORTED_FUNCTION(SQLGetEnvAttr)(
     SQLHSTMT handle, SQLINTEGER attribute, SQLPOINTER out_value, SQLINTEGER out_value_max_length, SQLINTEGER * out_value_length) {
-    syslog( LOG_INFO, "kfirkfir: in function %s", "SQLGetEnvAttr");
+    //syslog( LOG_INFO, "kfirkfir: in function %s", "SQLGetEnvAttr");
     return impl::GetEnvAttr(handle, attribute, out_value, out_value_max_length, out_value_length);
 }
 
 SQLRETURN SQL_API EXPORTED_FUNCTION_MAYBE_W(SQLGetConnectAttr)(
     SQLHSTMT handle, SQLINTEGER attribute, SQLPOINTER out_value, SQLINTEGER out_value_max_length, SQLINTEGER * out_value_length) {
-    syslog( LOG_INFO, "kfirkfir: in function %s", "SQLGetConnectAttr");
+    //syslog( LOG_INFO, "kfirkfir: in function %s", "SQLGetConnectAttr");
     return impl::GetConnectAttr(handle, attribute, out_value, out_value_max_length, out_value_length);
 }
 
 SQLRETURN SQL_API EXPORTED_FUNCTION_MAYBE_W(SQLGetStmtAttr)(
     SQLHSTMT handle, SQLINTEGER attribute, SQLPOINTER out_value, SQLINTEGER out_value_max_length, SQLINTEGER * out_value_length) {
-        syslog( LOG_INFO, "kfirkfir: in function %s", "SQLGetStmtAttr");
+        //syslog( LOG_INFO, "kfirkfir: in function %s", "SQLGetStmtAttr");
 
         return impl::GetStmtAttr(handle, attribute, out_value, out_value_max_length, out_value_length);
 }
@@ -457,7 +457,7 @@ SQLRETURN SQL_API EXPORTED_FUNCTION_MAYBE_W(SQLConnect)(
     SQLTCHAR *     Authentication,
     SQLSMALLINT    NameLength3
 ) {
-    syslog( LOG_INFO, "kfirkfir: in function %s", "SQLConnect2");
+    //syslog( LOG_INFO, "kfirkfir: in function %s", "SQLConnect2");
 
     return CALL_WITH_TYPED_HANDLE(SQL_HANDLE_DBC, ConnectionHandle, [&](Connection & connection) {
         std::string connection_string;
@@ -491,7 +491,7 @@ SQLRETURN SQL_API EXPORTED_FUNCTION_MAYBE_W(SQLDriverConnect)(
     SQLSMALLINT *   StringLength2Ptr,
     SQLUSMALLINT    DriverCompletion
 ) {
-    syslog( LOG_INFO, "kfirkfir: in function %s", "SQLDriverConnect");
+    //syslog( LOG_INFO, "kfirkfir: in function %s", "SQLDriverConnect");
 
     return CALL_WITH_TYPED_HANDLE(SQL_HANDLE_DBC, ConnectionHandle, [&](Connection & connection) {
         const auto connection_string = toUTF8(InConnectionString, StringLength1);
@@ -507,7 +507,7 @@ SQLRETURN SQL_API EXPORTED_FUNCTION_MAYBE_W(SQLDriverConnect)(
         }
 
         connection.connect(connection_string);
-    syslog( LOG_INFO, "kfirkfir: in function SQLDriverConnect:connection_string %s", connection_string.c_str());
+    //syslog( LOG_INFO, "kfirkfir: in function SQLDriverConnect:connection_string %s", connection_string.c_str());
 
         return fillOutputString<SQLTCHAR>(connection_string, OutConnectionString, out_buffer_length, StringLength2Ptr, false);
     });
@@ -525,7 +525,7 @@ SQLRETURN SQL_API EXPORTED_FUNCTION_MAYBE_W(SQLPrepare)(HSTMT statement_handle, 
 
 SQLRETURN SQL_API EXPORTED_FUNCTION(SQLExecute)(HSTMT statement_handle) {
     LOG(__FUNCTION__);
-    syslog( LOG_INFO, "kfirkfir: in function %s", "SQLExecute");
+    //syslog( LOG_INFO, "kfirkfir: in function %s", "SQLExecute");
 
     return CALL_WITH_TYPED_HANDLE(SQL_HANDLE_STMT, statement_handle, [&](Statement & statement) {
         statement.executeQuery();
@@ -535,14 +535,14 @@ SQLRETURN SQL_API EXPORTED_FUNCTION(SQLExecute)(HSTMT statement_handle) {
 
 SQLRETURN SQL_API EXPORTED_FUNCTION_MAYBE_W(SQLExecDirect)(HSTMT statement_handle, SQLTCHAR * statement_text, SQLINTEGER statement_text_size) {
     //LOG(__FUNCTION__ << " statement_text_size=" << statement_text_size << " statement_text=" << statement_text);
-    syslog( LOG_INFO, "kfirkfir: in function %s", "SQLExecDirect");
+    //syslog( LOG_INFO, "kfirkfir: in function %s", "SQLExecDirect");
 
     return CALL_WITH_TYPED_HANDLE(SQL_HANDLE_STMT, statement_handle, [&](Statement & statement) {
         const auto query = toUTF8(statement_text, statement_text_size);
-        syslog( LOG_INFO, "kfirkfir: in function SQLExecDirect:statemet:%s", statement_text);
+        //syslog( LOG_INFO, "kfirkfir: in function SQLExecDirect:statemet:%s", statement_text);
 
         statement.executeQuery(query);
-        syslog( LOG_INFO, "kfirkfir: in function SQLExecDirect:execution success");
+        //syslog( LOG_INFO, "kfirkfir: in function SQLExecDirect:execution success");
 
         return SQL_SUCCESS;
     });
@@ -552,7 +552,7 @@ SQLRETURN SQL_API EXPORTED_FUNCTION(SQLNumResultCols)(
     SQLHSTMT        StatementHandle,
     SQLSMALLINT *   ColumnCountPtr
 ) {
-    syslog( LOG_INFO, "kfirkfir: in function %s", "SQLNumResultCols");
+    //syslog( LOG_INFO, "kfirkfir: in function %s", "SQLNumResultCols");
 
     return CALL_WITH_TYPED_HANDLE(SQL_HANDLE_STMT, StatementHandle, [&](Statement & statement) {
         if (ColumnCountPtr) {
@@ -736,7 +736,7 @@ SQLRETURN SQL_API EXPORTED_FUNCTION_MAYBE_W(SQLDescribeCol)(HSTMT statement_hand
 SQLRETURN SQL_API EXPORTED_FUNCTION(SQLFetch)(
     SQLHSTMT     StatementHandle
 ) {
-    syslog( LOG_INFO, "kfirkfir: in function %s", "SQLFetch");
+    //syslog( LOG_INFO, "kfirkfir: in function %s", "SQLFetch");
 
     LOG(__FUNCTION__);
     return impl::Fetch(
@@ -749,7 +749,7 @@ SQLRETURN SQL_API EXPORTED_FUNCTION(SQLFetchScroll)(
     SQLSMALLINT   FetchOrientation,
     SQLLEN        FetchOffset
 ) {
-    syslog( LOG_INFO, "kfirkfir: in function %s", "SQLFetchScroll");
+    //syslog( LOG_INFO, "kfirkfir: in function %s", "SQLFetchScroll");
 
     LOG(__FUNCTION__);
     return impl::FetchScroll(
@@ -819,7 +819,7 @@ SQLRETURN SQL_API EXPORTED_FUNCTION(SQLMoreResults)(HSTMT statement_handle) {
 
 SQLRETURN SQL_API EXPORTED_FUNCTION(SQLDisconnect)(HDBC connection_handle) {
     LOG(__FUNCTION__);
-    syslog( LOG_INFO, "kfirkfir: in function %s", "SQLDisconnect");
+    //syslog( LOG_INFO, "kfirkfir: in function %s", "SQLDisconnect");
 
     return CALL_WITH_TYPED_HANDLE(SQL_HANDLE_DBC, connection_handle, [&](Connection & connection) {
         connection.session->reset();
@@ -1013,7 +1013,7 @@ SQLRETURN SQL_API EXPORTED_FUNCTION_MAYBE_W(SQLColumns)(
         }
 
         void transformRow(const std::vector<ColumnInfo> & columns_info, Row & row) override {
-            syslog( LOG_INFO, "kfirkfir: in function transformRow: %s", columns_info[0].name.c_str());
+            //syslog( LOG_INFO, "kfirkfir: in function transformRow: %s", columns_info[0].name.c_str());
 
             ColumnInfo tmp_column_info;
 
@@ -1632,7 +1632,7 @@ SQLRETURN SQL_API EXPORTED_FUNCTION(SQLEndTran)(
     SQLSMALLINT     CompletionType
 ) {
     LOG(__FUNCTION__);
-    syslog( LOG_INFO, "kfirkfir: in function %s", "SQLEndTran");
+    //syslog( LOG_INFO, "kfirkfir: in function %s", "SQLEndTran");
 
     return impl::EndTran(
         HandleType,
@@ -1650,7 +1650,7 @@ SQLRETURN SQL_API EXPORTED_FUNCTION_MAYBE_W(SQLGetDescField)(
     SQLINTEGER *    StringLengthPtr
 ) {
     LOG(__FUNCTION__);
-    syslog( LOG_INFO, "kfirkfir: in function %s", "SQLGetDescField");
+    //syslog( LOG_INFO, "kfirkfir: in function %s", "SQLGetDescField");
 
     return impl::GetDescField(
         DescriptorHandle,

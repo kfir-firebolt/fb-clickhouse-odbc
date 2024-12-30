@@ -9,8 +9,8 @@
 #include <Poco/NumberParser.h> // TODO: switch to std
 #include <Poco/URI.h>
 #include <Poco/Net/HTTPRequest.h>
-#include <crypto/poly1305.h>
-#include <sys/syslog.h>
+// #include <crypto/poly1305.h>
+// #include <sys/syslog.h>
 #include <nlohmann/json.hpp>
 
 #if !defined(WORKAROUND_DISABLE_SSL)
@@ -72,7 +72,7 @@ const TypeInfo & Connection::getTypeInfo(const std::string & type_name, const st
 }
 
 Poco::URI Connection::getUri() const {
-    syslog( LOG_INFO, "kfirkfir: in function Connection::getUri: url: %s", url.c_str());
+    //syslog( LOG_INFO, "kfirkfir: in function Connection::getUri: url: %s", url.c_str());
     // if (!url.empty()) {
     //     return Poco::URI(url);
     // }
@@ -180,7 +180,7 @@ void Connection::connect(const std::string & connection_string) {
     resetConfiguration();
     setConfiguration(cs_fields, dsn_fields);
     getJwtToken();
-    syslog( LOG_INFO, "kfirkfir: in function Connection::connect: finally connected. jwt: %s", jwt.c_str());
+    //syslog( LOG_INFO, "kfirkfir: in function Connection::connect: finally connected. jwt: %s", jwt.c_str());
     connectToSystemEngine();
     LOG("Creating session with " << proto << "://" << server << ":" << port);
 
@@ -199,7 +199,7 @@ void Connection::connect(const std::string & connection_string) {
         std::make_unique<Poco::Net::HTTPClientSession>()
     );
 
-    syslog( LOG_INFO, "kfirkfir: in function Connection::connect: setting host to: %s", server.c_str());
+    //syslog( LOG_INFO, "kfirkfir: in function Connection::connect: setting host to: %s", server.c_str());
     session->setHost(server);
     // session->setPort(port);
     session->setKeepAlive(true);
@@ -440,7 +440,7 @@ void Connection::setConfiguration(const key_value_map_t & cs_fields, const key_v
         const auto & value = field.second;
 
         if (cs_fields.find(key) != cs_fields.end()) {
-            syslog( LOG_INFO, "kfirkfir: in function DSN: unknown attribute '%s'='%s', unused, overriden by the connection string", key.c_str(), value.c_str());
+            //syslog( LOG_INFO, "kfirkfir: in function DSN: unknown attribute '%s'='%s', unused, overriden by the connection string", key.c_str(), value.c_str());
             LOG("DSN: attribute '" << key << " = " << value << "' unused, overriden by the connection string");
         }
         else {
@@ -453,7 +453,7 @@ void Connection::setConfiguration(const key_value_map_t & cs_fields, const key_v
                     throw std::runtime_error("DSN: bad value '" + value + "' for attribute '" + key + "'");
             }
             else {
-                syslog( LOG_INFO, "kfirkfir: in function DSN: unknown attribute '%s', ignoring", key.c_str());
+                //syslog( LOG_INFO, "kfirkfir: in function DSN: unknown attribute '%s', ignoring", key.c_str());
                 LOG("DSN: unknown attribute '" << key << "', ignoring");
             }
         }
@@ -465,7 +465,7 @@ void Connection::setConfiguration(const key_value_map_t & cs_fields, const key_v
         const auto & value = field.second;
 
         if (dsn_fields.find(key) != dsn_fields.end()) {
-            syslog( LOG_INFO, "kfirkfir: in function Connection string: attribute '%s'='%s', unused, overrides DSN attribute with the same name", key.c_str(), value.c_str());
+            //syslog( LOG_INFO, "kfirkfir: in function Connection string: attribute '%s'='%s', unused, overrides DSN attribute with the same name", key.c_str(), value.c_str());
             LOG("Connection string: attribute '" << key << " = " << value << "' overrides DSN attribute with the same name");
         }
 
@@ -478,7 +478,7 @@ void Connection::setConfiguration(const key_value_map_t & cs_fields, const key_v
                 throw std::runtime_error("Connection string: bad value '" + value + "' for attribute '" + key + "'");
         }
         else {
-            syslog( LOG_INFO, "kfirkfir: in function Connection string: unknown attribute '%s', ignoring", key.c_str());
+            //syslog( LOG_INFO, "kfirkfir: in function Connection string: unknown attribute '%s', ignoring", key.c_str());
             LOG("Connection string: unknown attribute '" << key << "', ignoring");
         }
     }
@@ -486,7 +486,7 @@ void Connection::setConfiguration(const key_value_map_t & cs_fields, const key_v
     // Deduce and set all the remaining attributes that are still carrying the default/unintialized values. (This will overwrite only some of the defaults.)
 
     if (dsn.empty()) {
-        syslog( LOG_INFO, "kfirkfir: in function Connection::setConfiguration: DSN is empty");
+        //syslog( LOG_INFO, "kfirkfir: in function Connection::setConfiguration: DSN is empty");
         dsn = INI_DSN_DEFAULT;
     }
 
@@ -563,7 +563,7 @@ void Connection::setConfiguration(const key_value_map_t & cs_fields, const key_v
 
     if (port == 0) {
         port = (Poco::UTF8::icompare(proto, "https") == 0 ? 8443 : 8123);
-        syslog( LOG_INFO, "kfirkfir: in function Connection::setConfiguration: setting port to: %d", port);
+        //syslog( LOG_INFO, "kfirkfir: in function Connection::setConfiguration: setting port to: %d", port);
     }
 
 
@@ -602,7 +602,7 @@ static size_t WriteCallback(void* contents, size_t size, size_t nmemb, std::stri
 
 void Connection::connectToSystemEngine() {
     const std::string curl_url = "https://" + server + "/web/v3/account/" + account_name + "/engineUrl";
-    syslog(LOG_INFO, "kfirkfir: in function Connection::connectToSystemEngine: url: %s", curl_url.c_str());
+    //syslog(LOG_INFO, "kfirkfir: in function Connection::connectToSystemEngine: url: %s", curl_url.c_str());
 
     Poco::URI uri(curl_url);
     Poco::Net::HTTPSClientSession session(uri.getHost(), uri.getPort());
@@ -629,7 +629,7 @@ void Connection::connectToSystemEngine() {
     }
     system_engine_url = response_json["engineUrl"];
     server = system_engine_url;
-    syslog(LOG_INFO, "kfirkfir: in function Connection::connectToSystemEngine: system engine url: %s", system_engine_url.c_str());
+    //syslog(LOG_INFO, "kfirkfir: in function Connection::connectToSystemEngine: system engine url: %s", system_engine_url.c_str());
 
     // TODO check if we need to set the proto to https here
     proto = "https";
@@ -637,7 +637,7 @@ void Connection::connectToSystemEngine() {
 
 void Connection::getJwtToken() {
     const std::string curl_url = "https://id." + env + ".firebolt.io/oauth/token";
-    syslog(LOG_INFO, "kfirkfir: in function Connection::getJwtToken: url: %s", curl_url.c_str());
+    //syslog(LOG_INFO, "kfirkfir: in function Connection::getJwtToken: url: %s", curl_url.c_str());
 
     Poco::URI uri(curl_url);
     Poco::Net::HTTPSClientSession session(uri.getHost(), uri.getPort());
