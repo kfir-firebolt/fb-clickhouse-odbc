@@ -11,7 +11,6 @@
 #include <Poco/Net/HTTPRequest.h>
 #include <crypto/poly1305.h>
 #include <sys/syslog.h>
-#include <curl/curl.h>
 #include <nlohmann/json.hpp>
 
 #if !defined(WORKAROUND_DISABLE_SSL)
@@ -602,68 +601,69 @@ static size_t WriteCallback(void* contents, size_t size, size_t nmemb, std::stri
 }
 
 void Connection::connectToSystemEngine() {
-    CURL* curl = curl_easy_init();
-    if (!curl) {
-        throw std::runtime_error("Failed to initialize curl.");
-    }
-
     const std::string curl_url = "https://" + server + "/web/v3/account/" + account_name + "/engineUrl";
-    syslog( LOG_INFO, "kfirkfir: in function Connection::connectToSystemEngine: url: %s", curl_url.c_str());
-    curl_easy_setopt(curl, CURLOPT_URL, curl_url.c_str());
-    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
+    syslog(LOG_INFO, "kfirkfir: in function Connection::connectToSystemEngine: url: %s", curl_url.c_str());
 
-    std::string response_body;
-    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response_body);
+    Poco::URI uri(curl_url);
+    Poco::Net::HTTPSClientSession session(uri.getHost(), uri.getPort());
+    Poco::Net::HTTPRequest request(Poco::Net::HTTPRequest::HTTP_GET, uri.getPathAndQuery(), Poco::Net::HTTPRequest::HTTP_1_1);
+    request.setContentType("application/json");
 
     const std::string jwt_token = buildJWTString();
-    const std::string auth_header = "Authorization: Bearer " + jwt_token;
-    curl_slist* headers = nullptr;
-    headers = curl_slist_append(headers, auth_header.c_str());
-    headers = curl_slist_append(headers, "Accept: application/json");
-    curl_easy_setopt(curl, CURLOPT_HTTPHEADER, headers);
+    const std::string auth_header = "Bearer " + jwt_token;
+    request.set("Authorization", auth_header);
 
-    CURLcode res = curl_easy_perform(curl);
-    if (res != CURLE_OK) {
-        throw std::runtime_error("Failed to connect to Firebolt system engine API. Error code: " + std::to_string(res) + ". Error: " + curl_easy_strerror(res));
+    Poco::Net::HTTPResponse response;
+    std::ostringstream response_body;
+    session.sendRequest(request);
+    std::istream& rs = session.receiveResponse(response);
+    Poco::StreamCopier::copyStream(rs, response_body);
+
+    if (response.getStatus() != Poco::Net::HTTPResponse::HTTP_OK) {
+        throw std::runtime_error("Failed to connect to Firebolt system engine API. HTTP Status: " + std::to_string(response.getStatus()));
     }
 
-    const nlohmann::json response_json = nlohmann::json::parse(std::move(response_body));
+    const nlohmann::json response_json = nlohmann::json::parse(response_body.str());
     if (!response_json.contains("engineUrl")) {
         throw std::runtime_error("Can not find engineUrl in response body: " + response_json.dump());
     }
     system_engine_url = response_json["engineUrl"];
     server = system_engine_url;
-    syslog( LOG_INFO, "kfirkfir: in function Connection::connectToSystemEngine: system engine url: %s", system_engine_url.c_str());
-    curl_easy_cleanup(curl);
+    syslog(LOG_INFO, "kfirkfir: in function Connection::connectToSystemEngine: system engine url: %s", system_engine_url.c_str());
+
     // TODO check if we need to set the proto to https here
     proto = "https";
 }
 
 void Connection::getJwtToken() {
-    CURL* curl = curl_easy_init();
-    if (!curl) {
-        throw std::runtime_error("Failed to initialize curl.");
+    const std::string curl_url = "https://id." + env + ".firebolt.io/oauth/token";
+    syslog(LOG_INFO, "kfirkfir: in function Connection::getJwtToken: url: %s", curl_url.c_str());
+
+    Poco::URI uri(curl_url);
+    Poco::Net::HTTPSClientSession session(uri.getHost(), uri.getPort());
+    Poco::Net::HTTPRequest request(Poco::Net::HTTPRequest::HTTP_POST, uri.getPathAndQuery(), Poco::Net::HTTPRequest::HTTP_1_1);
+    request.setContentType("application/x-www-form-urlencoded");
+
+    const std::string url_post_fields = "audience=https://api.firebolt.io&grant_type=client_credentials&client_id=" + username + "&client_secret=" + password;
+    request.setContentLength(url_post_fields.length());
+
+    std::ostream& os = session.sendRequest(request);
+    os << url_post_fields;
+
+    Poco::Net::HTTPResponse response;
+    std::ostringstream response_body;
+    std::istream& rs = session.receiveResponse(response);
+    Poco::StreamCopier::copyStream(rs, response_body);
+
+    if (response.getStatus() != Poco::Net::HTTPResponse::HTTP_OK) {
+        throw std::runtime_error("Failed to authenticate with Firebolt API. HTTP Status: " + std::to_string(response.getStatus()));
     }
-    std::string curl_url = "https://id." + env + ".firebolt.io/oauth/token";
-    curl_easy_setopt(curl, CURLOPT_URL, curl_url.c_str());
-    const std::string url_post_fields("audience=https://api.firebolt.io&grant_type=client_credentials&client_id=" + username + "&client_secret=" + password);
-    curl_easy_setopt(curl, CURLOPT_POSTFIELDS, url_post_fields.c_str());
-    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, WriteCallback);
 
-    std::string response_body;
-    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response_body);
-
-    CURLcode res = curl_easy_perform(curl);
-    if (res != CURLE_OK) {
-        throw std::runtime_error("Failed to authenticate with Firebolt API. Error code: " + std::to_string(res));
-    }
-
-    const nlohmann::json response_json = nlohmann::json::parse(std::move(response_body));
+    const nlohmann::json response_json = nlohmann::json::parse(response_body.str());
     if (!response_json.contains("access_token")) {
         throw std::runtime_error("Count not find access_token in response body: " + response_json.dump());
     }
     jwt = response_json["access_token"];
-    curl_easy_cleanup(curl);
 }
 
 void Connection::verifyConnection() {

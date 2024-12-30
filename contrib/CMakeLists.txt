@@ -42,7 +42,6 @@ add_contrib (nanodbc-cmake nanodbc)
 add_contrib (lz4-cmake lz4)
 add_contrib (double-conversion-cmake double-conversion)
 add_contrib (odbc-cpp-wrapper-cmake odbc-cpp-wrapper)
-add_contrib (curl-cmake curl)
 
 if (OS_DARWIN OR OS_LINUX)
     add_contrib (openssl-cmake openssl)

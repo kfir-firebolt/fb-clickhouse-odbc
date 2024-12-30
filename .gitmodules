@@ -38,9 +38,6 @@
 [submodule "contrib/odbc-cpp-wrapper"]
 	path = contrib/odbc-cpp-wrapper
 	url = https://github.com/SAP/odbc-cpp-wrapper.git
-[submodule "contrib/curl"]
-	path = contrib/curl
-	url = https://github.com/curl/curl.git
 [submodule "contrib/nlohmann"]
 	path = contrib/nlohmann
 	url = https://github.com/nlohmann/json.git

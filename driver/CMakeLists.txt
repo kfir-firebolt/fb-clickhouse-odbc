@@ -164,14 +164,12 @@ if (CH_ODBC_ENABLE_SSL)
 else ()
     set (_poco_net Poco::Net)
 endif ()
-#find_package(CURL REQUIRED)
 
 target_link_libraries (${libname}-impl
     PUBLIC Poco::Net
     PUBLIC Poco::Util
     PUBLIC Poco::Foundation
     PUBLIC Threads::Threads
-    PUBLIC CURL::libcurl
     PUBLIC nlohmann_json
 
 )
