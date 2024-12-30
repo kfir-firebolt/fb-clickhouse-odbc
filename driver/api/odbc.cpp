@@ -22,7 +22,6 @@
 
 #include <cstdio>
 #include <cstring>
-#include <log.h>
 // #include <sys/syslog.h>
 
 /** Functions from the ODBC interface can not directly call other functions.

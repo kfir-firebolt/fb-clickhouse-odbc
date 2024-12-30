@@ -12,6 +12,8 @@
 // #include <crypto/poly1305.h>
 // #include <sys/syslog.h>
 #include <nlohmann/json.hpp>
+#include <Poco/StreamCopier.h>
+
 
 #if !defined(WORKAROUND_DISABLE_SSL)
 #    include <Poco/Net/AcceptCertificateHandler.h>
