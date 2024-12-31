@@ -895,38 +895,39 @@ SQLRETURN SQL_API EXPORTED_FUNCTION_MAYBE_W(SQLTables)(
 
         // Get a list of all databases.
         if (catalog == SQL_ALL_CATALOGS && schema.empty() && table.empty()) {
-            query << " CAST(name, 'Nullable(String)') AS TABLE_CAT,";
-            query << " CAST(NULL, 'Nullable(String)') AS TABLE_SCHEM,";
-            query << " CAST(NULL, 'Nullable(String)') AS TABLE_NAME,";
-            query << " CAST(NULL, 'Nullable(String)') AS TABLE_TYPE,";
-            query << " CAST(NULL, 'Nullable(String)') AS REMARKS";
-            query << " FROM system.databases";
+            query << " catalog_name AS TABLE_CAT,";
+            query << " null::text AS TABLE_SCHEM,";
+            query << " null::text AS TABLE_NAME,";
+            query << " null::text AS TABLE_TYPE,";
+            query << " null::text AS REMARKS";
+            query << " FROM information_schema.catalogs";
         }
         // Get a list of all schemas (currently, just an empty list).
         else if (catalog.empty() && schema == SQL_ALL_SCHEMAS && table.empty()) {
-            query << " CAST(NULL, 'Nullable(String)') AS TABLE_CAT,";
-            query << " CAST(NULL, 'Nullable(String)') AS TABLE_SCHEM,";
-            query << " CAST(NULL, 'Nullable(String)') AS TABLE_NAME,";
-            query << " CAST(NULL, 'Nullable(String)') AS TABLE_TYPE,";
-            query << " CAST(NULL, 'Nullable(String)') AS REMARKS";
+            query << " null::text AS TABLE_CAT,";
+            query << " null::text AS TABLE_SCHEM,";
+            query << " null::text AS TABLE_NAME,";
+            query << " null::text AS TABLE_TYPE,";
+            query << " null::text AS REMARKS";
             query << " WHERE (1 == 0)";
         }
         // Get a list of all valid table types (currently, 'TABLE' only.)
         else if (catalog.empty() && schema.empty() && table.empty() && table_type_list == SQL_ALL_TABLE_TYPES) {
-            query << " CAST(NULL, 'Nullable(String)') AS TABLE_CAT,";
-            query << " CAST(NULL, 'Nullable(String)') AS TABLE_SCHEM,";
-            query << " CAST(NULL, 'Nullable(String)') AS TABLE_NAME,";
-            query << " CAST('TABLE', 'Nullable(String)') AS TABLE_TYPE,";
-            query << " CAST(NULL, 'Nullable(String)') AS REMARKS";
+            query << " null::text AS TABLE_CAT,";
+            query << " null::text AS TABLE_SCHEM,";
+            query << " null::text AS TABLE_NAME,";
+            query << " distinct table_type AS TABLE_TYPE,";
+            query << " null::text AS REMARKS";
+            query << " FROM information_schema.tables";
         }
         // Get a list of tables matching all criteria.
         else {
-            query << " CAST(database, 'Nullable(String)') AS TABLE_CAT,";
-            query << " CAST(NULL, 'Nullable(String)') AS TABLE_SCHEM,";
-            query << " CAST(name, 'Nullable(String)') AS TABLE_NAME,";
-            query << " CAST('TABLE', 'Nullable(String)') AS TABLE_TYPE,";
-            query << " CAST(NULL, 'Nullable(String)') AS REMARKS";
-            query << " FROM system.tables";
+            query << " table_catalog AS TABLE_CAT,";
+            query << " table_schema AS TABLE_SCHEM,";
+            query << " table_name AS TABLE_NAME,";
+            query << " table_type AS TABLE_TYPE,";
+            query << " null::text AS REMARKS";
+            query << " FROM information_schema.tables";
             query << " WHERE (1 == 1)";
 
             // Completely ommit the condition part of the query, if the value of SQL_ATTR_METADATA_ID is SQL_TRUE
@@ -937,49 +938,49 @@ SQLRETURN SQL_API EXPORTED_FUNCTION_MAYBE_W(SQLTables)(
             const auto is_pattern = (statement.getParent().getAttrAs<SQLUINTEGER>(SQL_ATTR_METADATA_ID, SQL_FALSE) != SQL_TRUE);
             const auto table_types = parseCatalogFnVLArgs(table_type_list);
 
-            // TODO: Use of coalesce() is a workaround here. Review.
+            // // TODO: Use of coalesce() is a workaround here. Review.
+            //
+            // // Note, that 'catalog' variable will be set to "%" above (or to the connected database name), even if CatalogName == nullptr.
+            // if (is_pattern && !is_odbc_v2) {
+            //     if (!isMatchAnythingCatalogFnPatternArg(catalog))
+            //         query << " AND isNotNull(TABLE_CAT) AND coalesce(TABLE_CAT, '') LIKE '" << escapeForSQL(catalog) << "'";
+            // }
+            // else if (CatalogName) {
+            //     query << " AND isNotNull(TABLE_CAT) AND coalesce(TABLE_CAT, '') == '" << escapeForSQL(catalog) << "'";
+            // }
+            //
+            // // Note, that 'schema' variable will be set to "%" above, even if SchemaName == nullptr.
+            // if (is_pattern) {
+            //     if (!isMatchAnythingCatalogFnPatternArg(schema))
+            //         query << " AND isNotNull(TABLE_SCHEM) AND coalesce(TABLE_SCHEM, '') LIKE '" << escapeForSQL(schema) << "'";
+            // }
+            // else if (SchemaName) {
+            //     query << " AND isNotNull(TABLE_SCHEM) AND coalesce(TABLE_SCHEM, '') == '" << escapeForSQL(schema) << "'";
+            // }
 
-            // Note, that 'catalog' variable will be set to "%" above (or to the connected database name), even if CatalogName == nullptr.
-            if (is_pattern && !is_odbc_v2) {
-                if (!isMatchAnythingCatalogFnPatternArg(catalog))
-                    query << " AND isNotNull(TABLE_CAT) AND coalesce(TABLE_CAT, '') LIKE '" << escapeForSQL(catalog) << "'";
-            }
-            else if (CatalogName) {
-                query << " AND isNotNull(TABLE_CAT) AND coalesce(TABLE_CAT, '') == '" << escapeForSQL(catalog) << "'";
-            }
+            // // Note, that 'table' variable will be set to "%" above, even if TableName == nullptr.
+            // if (is_pattern) {
+            //     if (!isMatchAnythingCatalogFnPatternArg(table))
+            //         query << " AND isNotNull(TABLE_NAME) AND coalesce(TABLE_NAME, '') LIKE '" << escapeForSQL(table) << "'";
+            // }
+            // else if (TableName) {
+            //     query << " AND isNotNull(TABLE_NAME) AND coalesce(TABLE_NAME, '') == '" << escapeForSQL(table) << "'";
+            // }
 
-            // Note, that 'schema' variable will be set to "%" above, even if SchemaName == nullptr.
-            if (is_pattern) {
-                if (!isMatchAnythingCatalogFnPatternArg(schema))
-                    query << " AND isNotNull(TABLE_SCHEM) AND coalesce(TABLE_SCHEM, '') LIKE '" << escapeForSQL(schema) << "'";
-            }
-            else if (SchemaName) {
-                query << " AND isNotNull(TABLE_SCHEM) AND coalesce(TABLE_SCHEM, '') == '" << escapeForSQL(schema) << "'";
-            }
-
-            // Note, that 'table' variable will be set to "%" above, even if TableName == nullptr.
-            if (is_pattern) {
-                if (!isMatchAnythingCatalogFnPatternArg(table))
-                    query << " AND isNotNull(TABLE_NAME) AND coalesce(TABLE_NAME, '') LIKE '" << escapeForSQL(table) << "'";
-            }
-            else if (TableName) {
-                query << " AND isNotNull(TABLE_NAME) AND coalesce(TABLE_NAME, '') == '" << escapeForSQL(table) << "'";
-            }
-
-            // Table type list is not affected by the value of SQL_ATTR_METADATA_ID, so we always treat it as a list of patterns.
-            if (!table_types.empty()) {
-                bool has_match_anything = false;
-                for (const auto & table_type : table_types) {
-                    has_match_anything = has_match_anything || isMatchAnythingCatalogFnPatternArg(table_type);
-                }
-                if (!has_match_anything) {
-                    query << " AND isNotNull(TABLE_TYPE) AND (1 == 0";
-                    for (const auto & table_type : table_types) {
-                        query << " OR coalesce(TABLE_TYPE, '') LIKE '" << escapeForSQL(table_type) << "'";
-                    }
-                    query << ")";
-                }
-            }
+            // // Table type list is not affected by the value of SQL_ATTR_METADATA_ID, so we always treat it as a list of patterns.
+            // if (!table_types.empty()) {
+            //     bool has_match_anything = false;
+            //     for (const auto & table_type : table_types) {
+            //         has_match_anything = has_match_anything || isMatchAnythingCatalogFnPatternArg(table_type);
+            //     }
+            //     if (!has_match_anything) {
+            //         query << " AND isNotNull(TABLE_TYPE) AND (1 == 0";
+            //         for (const auto & table_type : table_types) {
+            //             query << " OR coalesce(TABLE_TYPE, '') LIKE '" << escapeForSQL(table_type) << "'";
+            //         }
+            //         query << ")";
+            //     }
+            // }
         }
 
         query << " ORDER BY TABLE_TYPE, TABLE_CAT, TABLE_SCHEM, TABLE_NAME";

@@ -607,7 +607,8 @@ void Connection::connectToSystemEngine() {
     //syslog(LOG_INFO, "kfirkfir: in function Connection::connectToSystemEngine: url: %s", curl_url.c_str());
 
     Poco::URI uri(curl_url);
-    Poco::Net::HTTPSClientSession session(uri.getHost(), uri.getPort());
+    Poco::Net::Context::Ptr context = new Poco::Net::Context(Poco::Net::Context::CLIENT_USE, "", Poco::Net::Context::VERIFY_NONE);
+    Poco::Net::HTTPSClientSession session(uri.getHost(), uri.getPort(), context);
     Poco::Net::HTTPRequest request(Poco::Net::HTTPRequest::HTTP_GET, uri.getPathAndQuery(), Poco::Net::HTTPRequest::HTTP_1_1);
     request.setContentType("application/json");
 
@@ -642,7 +643,8 @@ void Connection::getJwtToken() {
     //syslog(LOG_INFO, "kfirkfir: in function Connection::getJwtToken: url: %s", curl_url.c_str());
 
     Poco::URI uri(curl_url);
-    Poco::Net::HTTPSClientSession session(uri.getHost(), uri.getPort());
+    Poco::Net::Context::Ptr context = new Poco::Net::Context(Poco::Net::Context::CLIENT_USE, "", Poco::Net::Context::VERIFY_NONE);
+    Poco::Net::HTTPSClientSession session(uri.getHost(), uri.getPort(), context);
     Poco::Net::HTTPRequest request(Poco::Net::HTTPRequest::HTTP_POST, uri.getPathAndQuery(), Poco::Net::HTTPRequest::HTTP_1_1);
     request.setContentType("application/x-www-form-urlencoded");
 
