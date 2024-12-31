@@ -498,7 +498,7 @@ void Connection::setConfiguration(const key_value_map_t & cs_fields, const key_v
     if (!url.empty()) {
         std::set<std::string> allowed_urls = {"https://api.staging.firebolt.io/", "https://api.app.firebolt.io/"};
         if (allowed_urls.find(url) == allowed_urls.end()) {
-            throw std::runtime_error("URL is not allowed");
+            throw std::runtime_error("URL is not allowed:" + url);
         }
         Poco::URI uri(url);
 
