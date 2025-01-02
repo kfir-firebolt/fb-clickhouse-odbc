@@ -150,7 +150,7 @@ SQLRETURN SQL_API EXPORTED_FUNCTION_MAYBE_W(SQLGetInfo)(
             CASE_STRING(SQL_KEYWORDS, "")
             CASE_STRING(SQL_PROCEDURE_TERM, "stored procedure")
             CASE_STRING(SQL_CATALOG_NAME_SEPARATOR, ".")
-            CASE_STRING(SQL_IDENTIFIER_QUOTE_CHAR, "`")
+            CASE_STRING(SQL_IDENTIFIER_QUOTE_CHAR, "\"")
             CASE_STRING(SQL_SEARCH_PATTERN_ESCAPE, "\\")
             CASE_STRING(SQL_SCHEMA_TERM, "schema")
             CASE_STRING(SQL_TABLE_TERM, "table")
@@ -533,7 +533,7 @@ SQLRETURN SQL_API EXPORTED_FUNCTION(SQLExecute)(HSTMT statement_handle) {
 }
 
 SQLRETURN SQL_API EXPORTED_FUNCTION_MAYBE_W(SQLExecDirect)(HSTMT statement_handle, SQLTCHAR * statement_text, SQLINTEGER statement_text_size) {
-    //LOG(__FUNCTION__ << " statement_text_size=" << statement_text_size << " statement_text=" << statement_text);
+    LOG(__FUNCTION__ << " statement_text_size=" << statement_text_size << " statement_text=" << statement_text);
     //syslog( LOG_INFO, "kfirkfir: in function %s", "SQLExecDirect");
 
     return CALL_WITH_TYPED_HANDLE(SQL_HANDLE_STMT, statement_handle, [&](Statement & statement) {
@@ -551,6 +551,7 @@ SQLRETURN SQL_API EXPORTED_FUNCTION(SQLNumResultCols)(
     SQLHSTMT        StatementHandle,
     SQLSMALLINT *   ColumnCountPtr
 ) {
+    LOG(__FUNCTION__);
     //syslog( LOG_INFO, "kfirkfir: in function %s", "SQLNumResultCols");
 
     return CALL_WITH_TYPED_HANDLE(SQL_HANDLE_STMT, StatementHandle, [&](Statement & statement) {
@@ -879,6 +880,7 @@ SQLRETURN SQL_API EXPORTED_FUNCTION_MAYBE_W(SQLTables)(
     SQLTCHAR *      TableType,
     SQLSMALLINT     NameLength4
 ) {
+    LOG(__FUNCTION__);
     auto func = [&](Statement & statement) {
         constexpr bool null_catalog_defaults_to_connected_database = true; // TODO: review and remove this behavior?
         const auto catalog = (CatalogName ? toUTF8(CatalogName, NameLength1) :
@@ -892,9 +894,12 @@ SQLRETURN SQL_API EXPORTED_FUNCTION_MAYBE_W(SQLTables)(
 
         std::stringstream query;
         query << "SELECT";
+        LOG("in SqlTables1" + catalog + schema + table + table_type_list);
 
         // Get a list of all databases.
         if (catalog == SQL_ALL_CATALOGS && schema.empty() && table.empty()) {
+            LOG("in SqlTables2" + catalog + schema + table + table_type_list);
+
             query << " catalog_name AS TABLE_CAT,";
             query << " null::text AS TABLE_SCHEM,";
             query << " null::text AS TABLE_NAME,";
@@ -904,6 +909,8 @@ SQLRETURN SQL_API EXPORTED_FUNCTION_MAYBE_W(SQLTables)(
         }
         // Get a list of all schemas (currently, just an empty list).
         else if (catalog.empty() && schema == SQL_ALL_SCHEMAS && table.empty()) {
+            LOG("in SqlTables3" + catalog + schema + table + table_type_list);
+
             query << " null::text AS TABLE_CAT,";
             query << " null::text AS TABLE_SCHEM,";
             query << " null::text AS TABLE_NAME,";
@@ -913,6 +920,8 @@ SQLRETURN SQL_API EXPORTED_FUNCTION_MAYBE_W(SQLTables)(
         }
         // Get a list of all valid table types (currently, 'TABLE' only.)
         else if (catalog.empty() && schema.empty() && table.empty() && table_type_list == SQL_ALL_TABLE_TYPES) {
+            LOG("in SqlTables4" + catalog + schema + table + table_type_list);
+
             query << " null::text AS TABLE_CAT,";
             query << " null::text AS TABLE_SCHEM,";
             query << " null::text AS TABLE_NAME,";
@@ -922,6 +931,13 @@ SQLRETURN SQL_API EXPORTED_FUNCTION_MAYBE_W(SQLTables)(
         }
         // Get a list of tables matching all criteria.
         else {
+            LOG("in SqlTables4" + catalog + schema + table + table_type_list);
+
+            // if (catalog.empty()) {
+            //     throw SqlException("Catalog name must be specified", "HYC00");
+            // }
+            //statement.getParent().database_name = catalog;
+
             query << " table_catalog AS TABLE_CAT,";
             query << " table_schema AS TABLE_SCHEM,";
             query << " table_name AS TABLE_NAME,";
@@ -1003,6 +1019,7 @@ SQLRETURN SQL_API EXPORTED_FUNCTION_MAYBE_W(SQLColumns)(
     SQLTCHAR *      ColumnName,
     SQLSMALLINT     NameLength4
 ) {
+    LOG(__FUNCTION__);
     class ColumnsMutator
         : public ResultMutator
     {
@@ -1068,12 +1085,12 @@ SQLRETURN SQL_API EXPORTED_FUNCTION_MAYBE_W(SQLColumns)(
 
         std::stringstream query;
         query << "SELECT"
-                 " database AS TABLE_CAT"   // 0
-                 ", '' AS TABLE_SCHEM"      // 1
-                 ", table AS TABLE_NAME"    // 2
-                 ", name AS COLUMN_NAME"    // 3
-                 ", 0 AS DATA_TYPE"         // 4
-                 ", type AS TYPE_NAME"      // 5
+                 " table_catalog AS TABLE_CAT"   // 0
+                 ", table_schema AS TABLE_SCHEM"      // 1
+                 ", table_name AS TABLE_NAME"    // 2
+                 ", column_name AS COLUMN_NAME"    // 3
+                 ", data_type AS DATA_TYPE"         // 4
+                 ", data_type AS TYPE_NAME"      // 5
                  ", 0 AS COLUMN_SIZE"       // 6
                  ", 0 AS BUFFER_LENGTH"     // 7
                  ", 0 AS DECIMAL_DIGITS"    // 8
@@ -1083,10 +1100,10 @@ SQLRETURN SQL_API EXPORTED_FUNCTION_MAYBE_W(SQLColumns)(
                  ", 0 AS COLUMN_DEF"        // 12
                  ", 0 AS SQL_DATA_TYPE"     // 13
                  ", 0 AS SQL_DATETIME_SUB"  // 14
-                 ", 0 AS CHAR_OCTET_LENGTH" // 15
-                 ", 0 AS ORDINAL_POSITION"  // 16
-                 ", 0 AS IS_NULLABLE"       // 17
-                 " FROM system.columns"
+                 ", CHARACTER_OCTET_LENGTH AS CHAR_OCTET_LENGTH" // 15
+                 ", ORDINAL_POSITION AS ORDINAL_POSITION"  // 16
+                 ", IS_NULLABLE AS IS_NULLABLE"       // 17
+                 " FROM information_schema.columns"
                  " WHERE (1 == 1)";
 
         // Completely ommit the condition part of the query, if the value of SQL_ATTR_METADATA_ID is SQL_TRUE
@@ -1100,25 +1117,25 @@ SQLRETURN SQL_API EXPORTED_FUNCTION_MAYBE_W(SQLColumns)(
         // Note, that 'catalog' variable will be set to "%" above (or to the connected database name), even if CatalogName == nullptr.
         if (is_pattern) {
             if (!isMatchAnythingCatalogFnPatternArg(catalog))
-                query << " AND isNotNull(TABLE_CAT) AND coalesce(TABLE_CAT, '') LIKE '" << escapeForSQL(catalog) << "'";
+                query << " AND coalesce(table_catalog, '') LIKE '" << catalog << "'";
         }
         else if (CatalogName) {
-            query << " AND isNotNull(TABLE_CAT) AND coalesce(TABLE_CAT, '') == '" << escapeForSQL(catalog) << "'";
+            query << " AND coalesce(table_catalog, '') == '" << escapeForSQL(catalog) << "'";
         }
 
         // Note, that 'schema' variable will be set to "%" above, even if SchemaName == nullptr.
         if (is_pattern) {
             if (!isMatchAnythingCatalogFnPatternArg(schema))
-                query << " AND isNotNull(TABLE_SCHEM) AND coalesce(TABLE_SCHEM, '') LIKE '" << escapeForSQL(schema) << "'";
+                query << " AND coalesce(table_schema, '') LIKE '" << schema << "'";
         }
         else if (SchemaName) {
-            query << " AND isNotNull(TABLE_SCHEM) AND coalesce(TABLE_SCHEM, '') == '" << escapeForSQL(schema) << "'";
+            query << " AND coalesce(table_schema, '') == '" << escapeForSQL(schema) << "'";
         }
 
         // Note, that 'table' variable will be set to "%" above, even if TableName == nullptr.
         if (is_pattern) {
             if (!isMatchAnythingCatalogFnPatternArg(table))
-                query << " AND TABLE_NAME LIKE '" << escapeForSQL(table) << "'";
+                query << " AND TABLE_NAME LIKE '" << (table) << "'";
         }
         else if (TableName) {
             query << " AND TABLE_NAME == '" << escapeForSQL(table) << "'";
@@ -1127,13 +1144,13 @@ SQLRETURN SQL_API EXPORTED_FUNCTION_MAYBE_W(SQLColumns)(
         // Note, that 'column' variable will be set to "%" above, even if ColumnName == nullptr.
         if (is_pattern) {
             if (!isMatchAnythingCatalogFnPatternArg(column))
-                query << " AND COLUMN_NAME LIKE '" << escapeForSQL(column) << "'";
+                query << " AND COLUMN_NAME LIKE '" << (column) << "'";
         }
         else if (ColumnName) {
             query << " AND COLUMN_NAME == '" << escapeForSQL(column) << "'";
         }
 
-        query << " ORDER BY TABLE_CAT, TABLE_SCHEM, TABLE_NAME, ORDINAL_POSITION";
+        query << " ORDER BY table_catalog, table_schema, TABLE_NAME, ORDINAL_POSITION";
         statement.executeQuery(query.str(), std::make_unique<ColumnsMutator>(statement));
 
         return SQL_SUCCESS;
@@ -1166,40 +1183,44 @@ SQLRETURN SQL_API EXPORTED_FUNCTION_MAYBE_W(SQLGetTypeInfo)(
                      " '"
                   << info.sql_type_name
                   << "' AS TYPE_NAME"
-                     ", toInt16("
+                     ", "
                   << info.sql_type
-                  << ") AS DATA_TYPE"
-                     ", toInt32("
+                  << " AS DATA_TYPE"
+                     ", "
                   << info.column_size
-                  << ") AS COLUMN_SIZE"
+                  << " AS COLUMN_SIZE"
                      ", '' AS LITERAL_PREFIX"
                      ", '' AS LITERAL_SUFFIX"
                      ", '' AS CREATE_PARAMS" /// TODO
-                     ", toInt16("
+                     ", "
                   << SQL_NO_NULLS
-                  << ") AS NULLABLE"
-                     ", toInt16("
+                  << " AS NULLABLE"
+                     ", "
                   << SQL_TRUE
-                  << ") AS CASE_SENSITIVE"
-                     ", toInt16("
+                  << " AS CASE_SENSITIVE"
+                     ", "
                   << SQL_SEARCHABLE
-                  << ") AS SEARCHABLE"
-                     ", toInt16("
+                  << " AS SEARCHABLE"
+                     ", "
                   << info.is_unsigned
-                  << ") AS UNSIGNED_ATTRIBUTE"
-                     ", toInt16("
+                  << " AS UNSIGNED_ATTRIBUTE"
+                     ", "
                   << SQL_FALSE
-                  << ") AS FIXED_PREC_SCALE"
-                     ", toInt16("
+                  << " AS FIXED_PREC_SCALE"
+                     ", "
                   << SQL_FALSE
-                  << ") AS AUTO_UNIQUE_VALUE"
-                     ", TYPE_NAME AS LOCAL_TYPE_NAME"
-                     ", toInt16(0) AS MINIMUM_SCALE"
-                     ", toInt16(0) AS MAXIMUM_SCALE"
-                     ", DATA_TYPE AS SQL_DATA_TYPE"
-                     ", toInt16(0) AS SQL_DATETIME_SUB"
-                     ", toInt32(10) AS NUM_PREC_RADIX" /// TODO
-                     ", toInt16(0) AS INTERVAL_PRECISION";
+                  << " AS AUTO_UNIQUE_VALUE"
+                    ", '"
+                 << info.sql_type_name
+                 << "' AS LOCAL_TYPE_NAME"
+                     ", 0 AS MINIMUM_SCALE"
+                     ", 0 AS MAXIMUM_SCALE"
+                     ", "
+                << info.sql_type
+                << " AS SQL_DATA_TYPE"
+                     ", 0 AS SQL_DATETIME_SUB"
+                     ", 10 AS NUM_PREC_RADIX" /// TODO
+                     ", 0 AS INTERVAL_PRECISION";
         };
 
         for (const auto & name_info : types_g) {
@@ -1223,7 +1244,7 @@ SQLRETURN SQL_API EXPORTED_FUNCTION_MAYBE_W(SQLGetTypeInfo)(
             add_query_for_type("DateTime", info);
         }
 
-        query << ") ORDER BY DATA_TYPE";
+        query << ") ORDER BY 2";
 
         if (first)
             query.str("SELECT 1 WHERE 0");

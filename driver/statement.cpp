@@ -406,6 +406,7 @@ std::string Statement::buildFinalQuery(const std::vector<ParamBindingInfo>& para
 }
 
 void Statement::executeQuery(const std::string & q, std::unique_ptr<ResultMutator> && mutator) {
+    LOG("Executing query: " << q);
     prepareQuery(q);
             //syslog( LOG_INFO, "kfirkfir: in function SQLExecDirect:execution middle1");
 executeQuery(std::move(mutator));
