@@ -13,6 +13,10 @@
 
 #include <cstring>
 // #include <internal/numbers.h>
+#if defined(_WIN32)
+#include <__msvc_int128.hpp>
+#endif
+
 
 #define lengthof(a) (sizeof(a) / sizeof(a[0]))
 
@@ -477,7 +481,12 @@ struct DataSourceType<DataSourceTypeId::Decimal> {
     // Size of this integer defines the upper bound of the "info" the internal
     // representation can carry.
     // TODO: switch to some 128-bit or even arbitrary-precision unsigned integer type.
-    using ContainerIntType = std::uint_fast64_t;
+# if defined(_WIN32)
+    using ContainerIntType = std::_Signed128;
+#else
+    using ContainerIntType = __int128_t;
+#endif
+
 
     ContainerIntType value = 0;
     std::int8_t sign = 0;

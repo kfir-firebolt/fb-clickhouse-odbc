@@ -161,13 +161,16 @@ SQLRETURN SQL_API EXPORTED_FUNCTION_MAYBE_W(SQLGetInfo)(
             CASE_FALLTHROUGH(SQL_DATA_SOURCE_READ_ONLY)
             CASE_FALLTHROUGH(SQL_ACCESSIBLE_PROCEDURES)
             CASE_FALLTHROUGH(SQL_ACCESSIBLE_TABLES)
-            CASE_FALLTHROUGH(SQL_CATALOG_NAME)
+            // See comment in SQL_QL_START
+            // CASE_FALLTHROUGH(SQL_CATALOG_NAME)
             CASE_FALLTHROUGH(SQL_EXPRESSIONS_IN_ORDERBY)
             CASE_FALLTHROUGH(SQL_LIKE_ESCAPE_CLAUSE)
             CASE_FALLTHROUGH(SQL_MULTIPLE_ACTIVE_TXN)
             CASE_FALLTHROUGH(SQL_OUTER_JOINS)
             CASE_STRING(SQL_COLUMN_ALIAS, "Y")
 
+            // See comment in SQL_QL_START
+            CASE_FALLTHROUGH(SQL_CATALOG_NAME)
             CASE_FALLTHROUGH(SQL_ORDER_BY_COLUMNS_IN_SELECT)
             CASE_FALLTHROUGH(SQL_INTEGRITY)
             CASE_FALLTHROUGH(SQL_MAX_ROW_SIZE_INCLUDES_LONG)
@@ -195,7 +198,10 @@ SQLRETURN SQL_API EXPORTED_FUNCTION_MAYBE_W(SQLGetInfo)(
             CASE_NUM(SQL_ODBC_API_CONFORMANCE, SQLSMALLINT, SQL_OAC_LEVEL1);
             CASE_NUM(SQL_ODBC_SQL_CONFORMANCE, SQLSMALLINT, SQL_OSC_CORE);
             CASE_NUM(SQL_GROUP_BY, SQLUSMALLINT, SQL_GB_GROUP_BY_CONTAINS_SELECT)
-            CASE_NUM(SQL_CATALOG_LOCATION, SQLUSMALLINT, SQL_CL_START)
+            // Workaround: dont use database name (catalog name). desiered value should be 1 (SQL_CL_START).
+            // For some reason few clients ommit schema and just writes db_name.relation_name,
+            // which is incompatible with firebolt syntax.
+            CASE_NUM(SQL_CATALOG_LOCATION, SQLUSMALLINT, 0x0000)
             CASE_NUM(SQL_FILE_USAGE, SQLUSMALLINT, SQL_FILE_NOT_SUPPORTED)
             CASE_NUM(SQL_IDENTIFIER_CASE, SQLUSMALLINT, SQL_IC_SENSITIVE)
             CASE_NUM(SQL_QUOTED_IDENTIFIER_CASE, SQLUSMALLINT, SQL_IC_SENSITIVE)
@@ -533,7 +539,7 @@ SQLRETURN SQL_API EXPORTED_FUNCTION(SQLExecute)(HSTMT statement_handle) {
 }
 
 SQLRETURN SQL_API EXPORTED_FUNCTION_MAYBE_W(SQLExecDirect)(HSTMT statement_handle, SQLTCHAR * statement_text, SQLINTEGER statement_text_size) {
-    LOG(__FUNCTION__ << " statement_text_size=" << statement_text_size << " statement_text=" << statement_text);
+    //LOG(__FUNCTION__ << " statement_text_size=" << statement_text_size << " statement_text=" << statement_text);
     //syslog( LOG_INFO, "kfirkfir: in function %s", "SQLExecDirect");
 
     return CALL_WITH_TYPED_HANDLE(SQL_HANDLE_STMT, statement_handle, [&](Statement & statement) {
@@ -925,13 +931,13 @@ SQLRETURN SQL_API EXPORTED_FUNCTION_MAYBE_W(SQLTables)(
             query << " null::text AS TABLE_CAT,";
             query << " null::text AS TABLE_SCHEM,";
             query << " null::text AS TABLE_NAME,";
-            query << " distinct table_type AS TABLE_TYPE,";
+            query << " distinct (case when table_type='BASE TABLE' then 'TABLE' else table_type end) AS TABLE_TYPE,";
             query << " null::text AS REMARKS";
             query << " FROM information_schema.tables";
         }
         // Get a list of tables matching all criteria.
         else {
-            LOG("in SqlTables4" + catalog + schema + table + table_type_list);
+            LOG("in SqlTables5" + catalog + schema + table + table_type_list);
 
             // if (catalog.empty()) {
             //     throw SqlException("Catalog name must be specified", "HYC00");
@@ -941,7 +947,7 @@ SQLRETURN SQL_API EXPORTED_FUNCTION_MAYBE_W(SQLTables)(
             query << " table_catalog AS TABLE_CAT,";
             query << " table_schema AS TABLE_SCHEM,";
             query << " table_name AS TABLE_NAME,";
-            query << " table_type AS TABLE_TYPE,";
+            query << " (case when table_type='BASE TABLE' then 'TABLE' else table_type end) AS TABLE_TYPE,";
             query << " null::text AS REMARKS";
             query << " FROM information_schema.tables";
             query << " WHERE (1 == 1)";
