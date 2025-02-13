@@ -424,14 +424,22 @@ void Statement::forwardExecuteQuery(std::unique_ptr<ResultMutator> && mutator) {
 }
 
 bool Statement::hasResultSet() const {
-    return (result_reader && result_reader->hasResultSet());
+    bool has_result = result_reader && result_reader->hasResultSet();
+    LOG("Checking for result set: " + std::string(has_result ? "true" : "false"));
+    return has_result;
 }
 
 ResultSet & Statement::getResultSet() {
+    LOG("Getting result set");
+    if (!hasResultSet()) {
+        LOG("Error: No result set available");
+        throw std::runtime_error("No result set available");
+    }
     return result_reader->getResultSet();
 }
 
 bool Statement::advanceToNextResultSet() {
+    LOG("Advancing to next result set");
     if (!is_executed)
         return false;
 
@@ -447,6 +455,7 @@ bool Statement::advanceToNextResultSet() {
     }
 
     requestNextPackOfResultSets(std::move(mutator));
+    LOG("After requestNextPackOfResultSets, hasResultSet: " + std::string(hasResultSet() ? "true" : "false"));
     return hasResultSet();
 }
 

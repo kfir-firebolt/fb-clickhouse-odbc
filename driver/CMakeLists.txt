@@ -65,6 +65,7 @@ add_library (${libname}-impl STATIC
     format/ODBCDriver2.cpp
     format/RowBinaryWithNamesAndTypes.cpp
     format/TabSeparatedWithNamesAndTypes.cpp
+    format/JsonWithNamesAndTypes.cpp
 
     api/impl/impl.cpp
 
@@ -110,6 +111,7 @@ add_library (${libname}-impl STATIC
     format/ODBCDriver2.h
     format/RowBinaryWithNamesAndTypes.h
     format/TabSeparatedWithNamesAndTypes.h
+    format/JsonWithNamesAndTypes.h
 
     attributes.h
     connection.h

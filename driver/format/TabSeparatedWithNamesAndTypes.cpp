@@ -1,17 +1,19 @@
 #include "driver/format/TabSeparatedWithNamesAndTypes.h"
 #include "driver/utils/resize_without_initialization.h"
 #include <ctime>
+#include <driver/driver.h>
 // #include <sys/syslog.h>
 
 
 bool TabSeparatedWithNamesAndTypesResultSet::eol() const {
-    if (stream.top() == '\n') {
+    if (!stream.eof() && stream.top() == '\n') {
         return true;
     }
     return false;
 }
 
 void TabSeparatedWithNamesAndTypesResultSet::readString(std::string & out) {
+    LOG(__FUNCTION__);
     while (!eol()) {
         const char c = stream.get();
         if (c == '\t') {
@@ -100,6 +102,9 @@ TabSeparatedWithNamesAndTypesResultSet::TabSeparatedWithNamesAndTypesResultSet(c
 bool TabSeparatedWithNamesAndTypesResultSet::readNextRow(Row & row) {
     //syslog( LOG_INFO, "kfirkfir: in function TabSeparatedWithNamesAndTypesResultSet:readNextRow start");
 
+    if (eol()) {
+        stream.get();
+    }
     if (stream.eof())
         return false;
     //syslog( LOG_INFO, "kfirkfir: in function TabSeparatedWithNamesAndTypesResultSet:readNextRow start2");
@@ -108,8 +113,10 @@ bool TabSeparatedWithNamesAndTypesResultSet::readNextRow(Row & row) {
         if (eol()) {
             stream.get();
         }
+        LOG("starting to read a value");
         std::string value;
         readString(value);
+        LOG("finished reading the value: " + value);
         //syslog( LOG_INFO, "kfirkfir: in function TabSeparatedWithNamesAndTypesResultSet:readNextRow %s", value.c_str());
         readValue(row.fields[i], columns_info[i], value);
         //syslog( LOG_INFO, "kfirkfir: in function TabSeparatedWithNamesAndTypesResultSet:readNextRow finish %lu", i);
@@ -127,8 +134,7 @@ bool TabSeparatedWithNamesAndTypesResultSet::isNull(const std::string & value) {
 }
 
 void TabSeparatedWithNamesAndTypesResultSet::readValue(Field & dest, ColumnInfo & column_info, const std::string & value) {
-    //syslog( LOG_INFO, "kfirkfir: in function readValue: %s", value.c_str());
-
+    LOG("starting converting the value: " + value + " for column: " + column_info.name + " of type: " + column_info.type);
     auto value_ = string_pool.get();
     value_manip::to_null(value_);
 
@@ -222,7 +228,7 @@ void TabSeparatedWithNamesAndTypesResultSet::readValue(DataSourceType<DataSource
 }
 
 void TabSeparatedWithNamesAndTypesResultSet::readValue(DataSourceType<DataSourceTypeId::Int64> & dest, ColumnInfo & column_info, const std::string & value) {
-    dest.value = std::stol(value);
+    dest.value = std::stoll(value);
 }
 
 void TabSeparatedWithNamesAndTypesResultSet::readValue(DataSourceType<DataSourceTypeId::Nothing> & dest, ColumnInfo & column_info, const std::string & value) {

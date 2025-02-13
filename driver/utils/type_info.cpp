@@ -3,6 +3,7 @@
 #include <Poco/String.h>
 
 #include <stdexcept>
+#include <driver/driver.h>
 // #include <sys/syslog.h>
 
 // sql_type_name is the name of the type as returned by the SQL_DESC_TYPE_NAME field of ODBC.
@@ -312,7 +313,7 @@ bool isStreamParam(SQLSMALLINT param_io_type) noexcept {
 
 // TODO check if this function needs changes, I did not found a path to it
 std::string convertCTypeToDataSourceType(const BoundTypeInfo & type_info) {
-        //syslog( LOG_INFO, "kfirkfir: in function convertCTypeToDataSourceType");
+    LOG(__FUNCTION__);
 
     const auto set_nullability = [is_nullable = type_info.is_nullable] (const std::string & type_name) {
         return (is_nullable ? "Nullable(" + type_name + ")" : type_name);

@@ -2,23 +2,34 @@
 #include "driver/format/ODBCDriver2.h"
 #include "driver/format/RowBinaryWithNamesAndTypes.h"
 #include "driver/format/TabSeparatedWithNamesAndTypes.h"
+#include "driver/format/JsonWithNamesAndTypes.h"
+#include "driver/driver.h"
 
 // #include <sys/syslog.h>
 
 const std::string::size_type initial_string_capacity_g = std::string{}.capacity();
 
 void ColumnInfo::assignTypeInfo(const TypeAst & ast, const std::string & default_timezone) {
+    LOG("Assigning type info for column: " + name + ", type: " + type);
+    
     if (ast.meta == TypeAst::Terminal) {
         type_without_parameters = ast.name;
+        LOG("Terminal type: " + type_without_parameters);
 
         switch (convertUnparametrizedTypeNameToTypeId(type_without_parameters)) {
             case DataSourceTypeId::DateTime: {
+                LOG("Processing DateTime type");
                 if (ast.elements.size() != 0 && ast.elements.size() != 1)
                     throw std::runtime_error("Unexpected DateTime type specification syntax");
 
                 precision = 0;
-                timezone = (ast.elements.size() == 1 ? ast.elements.front().name : default_timezone);
-
+                if (ast.elements.empty()) {
+                    timezone = default_timezone;
+                    LOG("Using default timezone: " + timezone);
+                } else {
+                    timezone = ast.elements.front().name;
+                    LOG("Using specified timezone: " + timezone);
+                }
                 break;
             }
 
@@ -93,6 +104,7 @@ void ColumnInfo::assignTypeInfo(const TypeAst & ast, const std::string & default
         // Interpret all types with unrecognized ASTs as String.
         type_without_parameters = "String";
     }
+    LOG("Type info assignment complete");
 }
 
 void ColumnInfo::updateTypeInfo() {
@@ -327,10 +339,10 @@ std::unique_ptr<ResultMutator> ResultReader::releaseMutator() {
 }
 
 std::unique_ptr<ResultReader> make_result_reader(const std::string & format, const std::string & timezone, std::istream & raw_stream, std::unique_ptr<ResultMutator> && mutator) {
+    LOG("Creating result reader for format: " + format);
+    
     if (format == "TabSeparatedWithNamesAndTypes") {
-            //syslog( LOG_INFO, "kfirkfir: in function make_result_reader FORMAT=TabSeparatedWithNamesAndTypes");
         return std::make_unique<TabSeparatedWithNamesAndTypesResultReader>(timezone, raw_stream, std::move(mutator));
-
     }
     if (format == "ODBCDriver2") {
         return std::make_unique<ODBCDriver2ResultReader>(timezone, raw_stream, std::move(mutator));
@@ -341,6 +353,13 @@ std::unique_ptr<ResultReader> make_result_reader(const std::string & format, con
 
         return std::make_unique<RowBinaryWithNamesAndTypesResultReader>(timezone, raw_stream, std::move(mutator));
     }
+    else if (format == "JSONLines_Compact") {
+        LOG("Creating JSON reader");
+        auto reader = std::make_unique<JsonWithNamesAndTypesResultReader>(timezone, raw_stream, std::move(mutator));
+        LOG("JSON reader created successfully");
+        return reader;
+    }
 
+    LOG("Unsupported format: " + format);
     throw std::runtime_error("'" + format + "' format is not supported");
 }

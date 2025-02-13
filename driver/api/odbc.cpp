@@ -561,6 +561,7 @@ SQLRETURN SQL_API EXPORTED_FUNCTION(SQLNumResultCols)(
     //syslog( LOG_INFO, "kfirkfir: in function %s", "SQLNumResultCols");
 
     return CALL_WITH_TYPED_HANDLE(SQL_HANDLE_STMT, StatementHandle, [&](Statement & statement) {
+        LOG("SQLNumResultCols: statement.isPrepared()=" << statement.isPrepared() << ", statement.isExecuted()=" << statement.isExecuted());
         if (ColumnCountPtr) {
             if (statement.isPrepared() && !statement.isExecuted())
                 statement.forwardExecuteQuery();
@@ -573,6 +574,7 @@ SQLRETURN SQL_API EXPORTED_FUNCTION(SQLNumResultCols)(
                 *ColumnCountPtr = 0;
             }
         }
+        LOG("SQLNumResultCols: *ColumnCountPtr=" << *ColumnCountPtr);
 
         return SQL_SUCCESS;
     });
@@ -591,7 +593,7 @@ SQLRETURN SQL_API EXPORTED_FUNCTION_MAYBE_W(SQLColAttribute)(
     SQLLEN * out_num_value
 #endif
 ) {
-    LOG(__FUNCTION__ << "(col=" << column_number << ", field=" << field_identifier << ")");
+    LOG(__FUNCTION__ << "(col=" << column_number << ", field=" << field_identifier << ", out_string_value_size=" << *out_string_value_size << ")");
     auto func = [&](Statement & statement) -> SQLRETURN {
         if (!statement.hasResultSet())
             throw SqlException("Column info is not available", "07005");
@@ -628,12 +630,15 @@ SQLRETURN SQL_API EXPORTED_FUNCTION_MAYBE_W(SQLColAttribute)(
 
 #define CASE_FIELD_NUM(NAME, VALUE)                                     \
             case NAME:                                                  \
+                LOG("SQLColAttribute: " << #NAME << " = " << VALUE);    \
                 if (out_num_value)                                      \
                     *reinterpret_cast<SQLLEN *>(out_num_value) = VALUE; \
                 return SQL_SUCCESS;
 
 #define CASE_FIELD_STR(NAME, VALUE) \
-            case NAME: return fillOutputString<SQLTCHAR>(VALUE, out_string_value, out_string_value_max_size, out_string_value_size, true);
+            case NAME:              \
+                LOG("SQLColAttribute: " << #NAME << " = " << VALUE);\
+                return fillOutputString<SQLTCHAR>(VALUE, out_string_value, out_string_value_max_size, out_string_value_size, true);
 
             // TODO: Use IRD (the descriptor) when column data representation is migrated there.
 
