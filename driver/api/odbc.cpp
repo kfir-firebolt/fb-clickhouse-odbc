@@ -593,7 +593,8 @@ SQLRETURN SQL_API EXPORTED_FUNCTION_MAYBE_W(SQLColAttribute)(
     SQLLEN * out_num_value
 #endif
 ) {
-    LOG(__FUNCTION__ << "(col=" << column_number << ", field=" << field_identifier << ", out_string_value_size=" << *out_string_value_size << ")");
+    LOG(__FUNCTION__);
+    // LOG(__FUNCTION__ << "(col=" << column_number << ", field=" << field_identifier << ", out_string_value_size=" << *out_string_value_size << ")");
     auto func = [&](Statement & statement) -> SQLRETURN {
         if (!statement.hasResultSet())
             throw SqlException("Column info is not available", "07005");
