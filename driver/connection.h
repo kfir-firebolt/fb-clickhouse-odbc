@@ -37,7 +37,7 @@ public: // Configuration fields.
     std::string certificateFile;
     std::string caLocation;
     std::string path;
-    const std::string default_format = /*"TabSeparatedWithNamesAndTypes"*/ "JSONLines_Compact";
+    const std::string default_format = "JSONLines_Compact";
     std::string env = "app";
     std::string account_name;
     std::string database_name;

@@ -583,7 +583,7 @@ void Connection::setConfiguration(const key_value_map_t & cs_fields, const key_v
 
     // dont allow custom format
     // if (default_format.empty())
-    //     default_format = "TabSeparatedWithNamesAndTypes";
+    //     default_format = "";
 
     // if (database_name.empty())
     //     database_name = "default";

@@ -224,15 +224,15 @@ void JsonWithNamesAndTypesResultSet::readValue(Field & dest, ColumnInfo & column
 
     if (convert_on_fetch_conservatively) switch (column_info.type_without_parameters_id) {
         case DataSourceTypeId::Date:        return readValueUsing(WireTypeDateAsInt(column_info.timezone), dest, column_info, value);
-        case DataSourceTypeId::DateTime:    return readValueUsing(WireTypeDateTimeAsInt(column_info.timezone), dest, column_info, value);
-        case DataSourceTypeId::DateTime64:  return readValueUsing(WireTypeDateTime64AsInt(column_info.precision, column_info.timezone), dest, column_info, value);
+        case DataSourceTypeId::Timestamp:    return readValueUsing(WireTypeDateTimeAsInt(column_info.timezone), dest, column_info, value);
+        case DataSourceTypeId::TimestampTz:  return readValueUsing(WireTypeDateTime64AsInt(column_info.precision, column_info.timezone), dest, column_info, value);
         default:                            break;
     }
 
     switch (column_info.type_without_parameters_id) {
         case DataSourceTypeId::Date:        return readValueAs<DataSourceType<DataSourceTypeId::Date>>(dest, column_info, value);
-        case DataSourceTypeId::DateTime:    return readValueAs<DataSourceType<DataSourceTypeId::DateTime>>(dest, column_info, value);
-        case DataSourceTypeId::DateTime64:  return readValueAs<DataSourceType<DataSourceTypeId::DateTime64>>(dest, column_info, value);
+        case DataSourceTypeId::Timestamp:    return readValueAs<DataSourceType<DataSourceTypeId::Timestamp>>(dest, column_info, value);
+        case DataSourceTypeId::TimestampTz:  return readValueAs<DataSourceType<DataSourceTypeId::TimestampTz>>(dest, column_info, value);
         case DataSourceTypeId::Decimal:     return readValueAs<DataSourceType<DataSourceTypeId::Decimal>>(dest, column_info, value);
         case DataSourceTypeId::Decimal32:   return readValueAs<DataSourceType<DataSourceTypeId::Decimal32>>(dest, column_info, value);
         case DataSourceTypeId::Decimal64:   return readValueAs<DataSourceType<DataSourceTypeId::Decimal64>>(dest, column_info, value);
@@ -265,12 +265,12 @@ void JsonWithNamesAndTypesResultSet::readValue(DataSourceType<DataSourceTypeId::
     value_manip::from_value<std::string>::template to_value<DataSourceType<DataSourceTypeId::Date>>::convert(value, dest);
 }
 
-void JsonWithNamesAndTypesResultSet::readValue(DataSourceType<DataSourceTypeId::DateTime> & dest, ColumnInfo & column_info, const std::string & value) {
-    value_manip::from_value<std::string>::template to_value<DataSourceType<DataSourceTypeId::DateTime>>::convert(value, dest);
+void JsonWithNamesAndTypesResultSet::readValue(DataSourceType<DataSourceTypeId::Timestamp> & dest, ColumnInfo & column_info, const std::string & value) {
+    value_manip::from_value<std::string>::template to_value<DataSourceType<DataSourceTypeId::Timestamp>>::convert(value, dest);
 }
 
-void JsonWithNamesAndTypesResultSet::readValue(DataSourceType<DataSourceTypeId::DateTime64> & dest, ColumnInfo & column_info, const std::string & value) {
-    value_manip::from_value<std::string>::template to_value<DataSourceType<DataSourceTypeId::DateTime64>>::convert(value, dest);
+void JsonWithNamesAndTypesResultSet::readValue(DataSourceType<DataSourceTypeId::TimestampTz> & dest, ColumnInfo & column_info, const std::string & value) {
+    value_manip::from_value<std::string>::template to_value<DataSourceType<DataSourceTypeId::TimestampTz>>::convert(value, dest);
 }
 
 void JsonWithNamesAndTypesResultSet::readValue(DataSourceType<DataSourceTypeId::Decimal> & dest, ColumnInfo & column_info, const std::string & value) {

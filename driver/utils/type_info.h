@@ -51,7 +51,8 @@ struct TypeInfo {
 extern const std::map<std::string, TypeInfo> types_g;
 
 inline const TypeInfo & type_info_for(const std::string & type) {
-    const auto it = types_g.find(type);
+    const auto type_lower = Poco::toLower(type);
+    const auto it = types_g.find(type_lower);
     if (it == types_g.end())
         throw std::runtime_error("unknown type1: " + type);
     return it->second;
@@ -60,8 +61,8 @@ inline const TypeInfo & type_info_for(const std::string & type) {
 enum class DataSourceTypeId {
     Unknown = 0,
     Date,
-    DateTime,
-    DateTime64,
+    Timestamp,
+    TimestampTz,
     Decimal,
     Decimal32,
     Decimal64,
@@ -460,14 +461,14 @@ struct DataSourceType<DataSourceTypeId::Date>
 };
 
 template <>
-struct DataSourceType<DataSourceTypeId::DateTime>
+struct DataSourceType<DataSourceTypeId::Timestamp>
     : public SimpleTypeWrapper<SQL_TIMESTAMP_STRUCT>
 {
     using SimpleTypeWrapper<SQL_TIMESTAMP_STRUCT>::SimpleTypeWrapper;
 };
 
 template <>
-struct DataSourceType<DataSourceTypeId::DateTime64>
+struct DataSourceType<DataSourceTypeId::TimestampTz>
     : public SimpleTypeWrapper<SQL_TIMESTAMP_STRUCT>
 {
     using SimpleTypeWrapper<SQL_TIMESTAMP_STRUCT>::SimpleTypeWrapper;
@@ -1886,14 +1887,14 @@ namespace value_manip {
         template <typename DestinationType>
         struct to_value {
             static inline void convert(const SourceType & src, DestinationType & dest) {
-                convert_via_proxy<DataSourceType<DataSourceTypeId::DateTime>>(src, dest);
+                convert_via_proxy<DataSourceType<DataSourceTypeId::Timestamp>>(src, dest);
             }
         };
     };
 
     template <>
-    struct from_value<WireTypeDateTimeAsInt>::to_value<DataSourceType<DataSourceTypeId::DateTime>> {
-        using DestinationType = DataSourceType<DataSourceTypeId::DateTime>;
+    struct from_value<WireTypeDateTimeAsInt>::to_value<DataSourceType<DataSourceTypeId::Timestamp>> {
+        using DestinationType = DataSourceType<DataSourceTypeId::Timestamp>;
 
         static inline void convert(const SourceType & src, DestinationType & dest) {
             std::tm tm = {};
@@ -1922,14 +1923,14 @@ namespace value_manip {
         template <typename DestinationType>
         struct to_value {
             static inline void convert(const SourceType & src, DestinationType & dest) {
-                convert_via_proxy<DataSourceType<DataSourceTypeId::DateTime64>>(src, dest);
+                convert_via_proxy<DataSourceType<DataSourceTypeId::TimestampTz>>(src, dest);
             }
         };
     };
 
     template <>
-    struct from_value<WireTypeDateTime64AsInt>::to_value<DataSourceType<DataSourceTypeId::DateTime64>> {
-        using DestinationType = DataSourceType<DataSourceTypeId::DateTime64>;
+    struct from_value<WireTypeDateTime64AsInt>::to_value<DataSourceType<DataSourceTypeId::TimestampTz>> {
+        using DestinationType = DataSourceType<DataSourceTypeId::TimestampTz>;
 
         static inline void convert(const SourceType & src, DestinationType & dest) {
             static constexpr SQLUINTEGER pow10[] = {1, 10, 100, 1000, 10000, 100000, 1000000, 10000000, 100000000, 1000000000};

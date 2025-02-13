@@ -9,7 +9,7 @@
 // sql_type_name is the name of the type as returned by the SQL_DESC_TYPE_NAME field of ODBC.
 const std::map<std::string, TypeInfo> types_g = {
     // TODO check what is the correct size for each type
-    {"bool", TypeInfo {"bool", true, SQL_VARCHAR, 3, 1}},
+    {"bool", TypeInfo {"bool", true, SQL_BIT, 3, 1}},
     {"int", TypeInfo {"int", false, SQL_INTEGER, 1 + 10, 4}},
     {"bigint", TypeInfo {"bigint", false, SQL_BIGINT, 1 + 19, 8}},
     {"real", TypeInfo {"real", false, SQL_REAL, 7, 4}},
@@ -17,9 +17,10 @@ const std::map<std::string, TypeInfo> types_g = {
     {"double", TypeInfo {"float8", false, SQL_FLOAT, 15, 8}},
     {"numeric", TypeInfo {"numeric", false, SQL_NUMERIC, 1 + 2 + 38, 16}}, // -0.
     {"text", TypeInfo {"text", true, SQL_LONGVARCHAR, TypeInfo::string_max_size, TypeInfo::string_max_size}},
-    {"Date", TypeInfo {"DATE", true, SQL_TYPE_DATE, 10, 6}},
-    {"DateTime", TypeInfo {"TIMESTAMP", true, SQL_TYPE_TIMESTAMP, 19, 16}},
-    {"DateTime64", TypeInfo {"TIMESTAMP", true, SQL_TYPE_TIMESTAMP, 29, 16}},
+    {"date", TypeInfo {"DATE", true, SQL_TYPE_DATE, 10, 6}},
+    {"timestamp", TypeInfo {"TIMESTAMP", true, SQL_TYPE_TIMESTAMP, 19, 16}},
+    {"timestampntz", TypeInfo {"TIMESTAMP", true, SQL_TYPE_TIMESTAMP, 19, 16}},
+    {"timestamptz", TypeInfo {"TIMESTAMPTZ", true, SQL_TYPE_TIMESTAMP, 29, 16}},
     {"array", TypeInfo {"array", true, SQL_VARCHAR, TypeInfo::string_max_size, TypeInfo::string_max_size}},
     {"Nothing", TypeInfo {"null", true, SQL_TYPE_NULL, 1, 1}},
     {"bytea", TypeInfo {"bytea", true, SQL_LONGVARBINARY, TypeInfo::string_max_size, TypeInfo::string_max_size}},
@@ -30,8 +31,8 @@ DataSourceTypeId convertUnparametrizedTypeNameToTypeId(const std::string & type_
     //syslog( LOG_INFO, "kfirkfir: in function convertUnparametrizedTypeNameToTypeId: %s", type_name.c_str());
 
          if (Poco::icompare(type_name, "Date") == 0)        return DataSourceTypeId::Date;
-    else if (Poco::icompare(type_name, "DateTime") == 0)    return DataSourceTypeId::DateTime;
-    else if (Poco::icompare(type_name, "DateTime64") == 0)  return DataSourceTypeId::DateTime64;
+    else if (Poco::icompare(type_name, "Timestamp") == 0)    return DataSourceTypeId::Timestamp;
+    else if (Poco::icompare(type_name, "TimestampTz") == 0)  return DataSourceTypeId::TimestampTz;
     else if (Poco::icompare(type_name, "Decimal") == 0)     return DataSourceTypeId::Decimal;
     else if (Poco::icompare(type_name, "REAL") == 0)     return DataSourceTypeId::Float32;
     // TODO fix packdb to return real instead of float
@@ -54,7 +55,6 @@ DataSourceTypeId convertUnparametrizedTypeNameToTypeId(const std::string & type_
     else if (Poco::icompare(type_name, "FLOAT32") == 0)       return DataSourceTypeId::Float32;
       else if (Poco::icompare(type_name, "Float64") == 0)     return DataSourceTypeId::Float64;
       else if (Poco::icompare(type_name, "DOUBLE") == 0)      return DataSourceTypeId::Float64;
-    else if (Poco::icompare(type_name, "TIMESTAMP") == 0)   return DataSourceTypeId::DateTime;
     else if (Poco::icompare(type_name, "VARCHAR") == 0)     return DataSourceTypeId::String;
     else if (Poco::icompare(type_name, "TEXT") == 0)        return DataSourceTypeId::String;
     else if (Poco::icompare(type_name, "BYTEA") == 0)        return DataSourceTypeId::Bytea;
@@ -66,8 +66,8 @@ DataSourceTypeId convertUnparametrizedTypeNameToTypeId(const std::string & type_
 std::string convertTypeIdToUnparametrizedCanonicalTypeName(DataSourceTypeId type_id) {
     switch (type_id) {
         case DataSourceTypeId::Date:        return "Date";
-        case DataSourceTypeId::DateTime:    return "DateTime";
-        case DataSourceTypeId::DateTime64:  return "DateTime64";
+        case DataSourceTypeId::Timestamp:    return "Timestamp";
+        case DataSourceTypeId::TimestampTz:  return "TimestampTz";
         case DataSourceTypeId::Decimal:     return "numeric";
         case DataSourceTypeId::Float32:     return "real";
         case DataSourceTypeId::Float64:     return "double";

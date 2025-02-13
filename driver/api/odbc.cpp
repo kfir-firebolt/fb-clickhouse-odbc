@@ -1251,9 +1251,9 @@ SQLRETURN SQL_API EXPORTED_FUNCTION_MAYBE_W(SQLGetTypeInfo)(
         }
 
         {
-            auto info = statement.getTypeInfo("DateTime", "DateTime");
+            auto info = statement.getTypeInfo("Timestamp", "Timestamp");
             info.sql_type = SQL_TIMESTAMP;
-            add_query_for_type("DateTime", info);
+            add_query_for_type("Timestamp", info);
         }
 
         query << ") ORDER BY 2";

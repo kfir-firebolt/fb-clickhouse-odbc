@@ -28,8 +28,8 @@ private:
     void readValue(WireTypeDateTimeAsInt & dest, ColumnInfo & column_info, const std::string & value);
     void readValue(WireTypeDateTime64AsInt & dest, ColumnInfo & column_info, const std::string & value);
     void readValue(DataSourceType<DataSourceTypeId::Date> & dest, ColumnInfo & column_info, const std::string & value);
-    void readValue(DataSourceType<DataSourceTypeId::DateTime> & dest, ColumnInfo & column_info, const std::string & value);
-    void readValue(DataSourceType<DataSourceTypeId::DateTime64> & dest, ColumnInfo & column_info, const std::string & value);
+    void readValue(DataSourceType<DataSourceTypeId::Timestamp> & dest, ColumnInfo & column_info, const std::string & value);
+    void readValue(DataSourceType<DataSourceTypeId::TimestampTz> & dest, ColumnInfo & column_info, const std::string & value);
     void readValue(DataSourceType<DataSourceTypeId::Decimal> & dest, ColumnInfo & column_info, const std::string & value);
     void readValue(DataSourceType<DataSourceTypeId::Float32> & dest, ColumnInfo & column_info, const std::string & value);
     void readValue(DataSourceType<DataSourceTypeId::Float64> & dest, ColumnInfo & column_info, const std::string & value);

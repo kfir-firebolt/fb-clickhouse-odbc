@@ -39,8 +39,8 @@ class Field {
 public:
     using DataType = std::variant<
         DataSourceType< DataSourceTypeId::Date        >,
-        DataSourceType< DataSourceTypeId::DateTime    >,
-        DataSourceType< DataSourceTypeId::DateTime64  >,
+        DataSourceType< DataSourceTypeId::Timestamp    >,
+        DataSourceType< DataSourceTypeId::TimestampTz  >,
         DataSourceType< DataSourceTypeId::Decimal     >,
         DataSourceType< DataSourceTypeId::Decimal32   >,
         DataSourceType< DataSourceTypeId::Decimal64   >,

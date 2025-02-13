@@ -9,16 +9,19 @@ Environment::Environment(Driver & driver)
 }
 
 const TypeInfo & Environment::getTypeInfo(const std::string & type_name, const std::string & type_name_without_parameters) const {
-    auto it = types_g.find(type_name);
+    const auto type_name_lower = Poco::toLower(type_name); 
+    const auto type_name_without_params_lower = Poco::toLower(type_name_without_parameters); 
+    auto it = types_g.find(type_name_lower);
 
     if (it == types_g.end())
-        it = types_g.find(type_name_without_parameters);
+        it = types_g.find(type_name_without_params_lower);
 
     if (it == types_g.end()) {
         const auto tmp_type_without_parameters_id = convertUnparametrizedTypeNameToTypeId(type_name_without_parameters);
         auto tmp_type_name = convertTypeIdToUnparametrizedCanonicalTypeName(tmp_type_without_parameters_id);
 
-        it = types_g.find(tmp_type_name);
+        const auto tmp_type_name_lower = Poco::toLower(tmp_type_name);
+        it = types_g.find(tmp_type_name_lower);
     }
 
     if (it != types_g.end())
