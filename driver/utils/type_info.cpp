@@ -9,7 +9,7 @@
 // sql_type_name is the name of the type as returned by the SQL_DESC_TYPE_NAME field of ODBC.
 const std::map<std::string, TypeInfo> types_g = {
     // TODO check what is the correct size for each type
-    {"bool", TypeInfo {"bool", true, SQL_BIT, 3, 1}},
+    {"bool", TypeInfo {"bool", true, SQL_TINYINT, 3, 1}},
     {"int", TypeInfo {"int", false, SQL_INTEGER, 1 + 10, 4}},
     {"bigint", TypeInfo {"bigint", false, SQL_BIGINT, 1 + 19, 8}},
     {"real", TypeInfo {"real", false, SQL_REAL, 7, 4}},
