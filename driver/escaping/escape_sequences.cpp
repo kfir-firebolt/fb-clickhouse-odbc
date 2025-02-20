@@ -10,23 +10,24 @@
 
 #include <iostream>
 #include <map>
-
+#include <algorithm>
+#include <cctype>
 using namespace std;
 
 namespace {
 
-const std::map<const std::string, const std::string> fn_convert_map {
-    {"SQL_TINYINT", "toUInt8"},
-    {"SQL_SMALLINT", "toUInt16"},
-    {"SQL_INTEGER", "toInt32"},
-    {"SQL_BIGINT", "toInt64"},
-    {"SQL_REAL", "toFloat32"},
-    {"SQL_DOUBLE", "toFloat64"},
-    {"SQL_VARCHAR", "toString"},
-    {"SQL_DATE", "toDate"},
-    {"SQL_TYPE_DATE", "toDate"},
-    {"SQL_TIMESTAMP", "toDateTime"},
-    {"SQL_TYPE_TIMESTAMP", "toDateTime"},
+const std::map<const std::string, const std::string> sql_type_to_fb_type_map {
+    {"SQL_TINYINT", "bool"},
+    {"SQL_SMALLINT", "int"},
+    {"SQL_INTEGER", "int"},
+    {"SQL_BIGINT", "bigint"},
+    {"SQL_REAL", "real"},
+    {"SQL_DOUBLE", "double"},
+    {"SQL_VARCHAR", "text"},
+    {"SQL_DATE", "date"},
+    {"SQL_TYPE_DATE", "date"},
+    {"SQL_TIMESTAMP", "timestamp"},
+    {"SQL_TYPE_TIMESTAMP", "timestamp"},
 };
 
 #define DECLARE2(TOKEN, NAME) \
@@ -69,13 +70,6 @@ const std::map<const Token::Type, const std::string> timeadd_func_map {
 
 string processEscapeSequencesImpl(const StringView seq, Lexer & lex);
 
-string convertFunctionByType(const StringView & typeName) {
-    const auto type_name_string = typeName.to_string();
-    if (fn_convert_map.find(type_name_string) != fn_convert_map.end())
-        return fn_convert_map.at(type_name_string);
-
-    return string();
-}
 
 string processParentheses(const StringView seq, Lexer & lex) {
     string result;
@@ -141,6 +135,17 @@ string processIdentOrFunction(const StringView seq, Lexer & lex) {
     return result;
 }
 
+std::string getFBType(const std::string & sql_type) {
+    std::string lower_sql_type = sql_type;
+    std::transform(lower_sql_type.begin(), lower_sql_type.end(), lower_sql_type.begin(), ::tolower);
+
+    auto it = sql_type_to_fb_type_map.find(lower_sql_type);
+    if (it != sql_type_to_fb_type_map.end()) {
+        return it->second;
+    }
+    return "";
+}
+
 string processFunction(const StringView seq, Lexer & lex) {
     const Token fn(lex.Consume());
 
@@ -169,15 +174,17 @@ string processFunction(const StringView seq, Lexer & lex) {
             return seq.to_string();
         }
 
-        string func = convertFunctionByType(type.literal.to_string());
+        // string func = convertFunctionByType(type.literal.to_string());
+        string fb_type = getFBType(type.literal.to_string());
 
-        if (!func.empty()) {
+        if (!fb_type.empty()) {
             while (lex.Match(Token::SPACE)) {
             }
             if (!lex.Match(Token::RPARENT)) {
                 return seq.to_string();
             }
-            result = func + "(" + result + ")";
+            // result = func + "(" + result + ")";
+            result = "CAST(" + result + " as " + fb_type + ")";
         }
 
         return result;
@@ -357,7 +364,8 @@ string processDateTime(const StringView seq, Lexer & lex) {
     if (data.isInvalid()) {
         return seq.to_string();
     } else {
-        return string("toDateTime(") + removeMilliseconds(data.literal) + ")";
+        // TODO check if need to remove milliseconds
+        return string("cast(") + removeMilliseconds(data.literal) + " as timestamp)";
     }
 }
 
