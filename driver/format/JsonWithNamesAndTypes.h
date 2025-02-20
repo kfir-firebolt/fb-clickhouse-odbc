@@ -65,6 +65,8 @@ private:
         bool binary(binary_t& val) override;
         bool parse_error(std::size_t position, const std::string& last_token, const nlohmann::detail::exception& ex) override;
 
+        bool finished_json = false;
+
     private:
         JsonWithNamesAndTypesResultSet& parent_;
         const std::string& timezone_;
@@ -74,8 +76,8 @@ private:
         bool reading_columns_ = false;
         bool reading_data_ = false;
         int array_depth_ = 0;
-        bool should_stop_ = false;
         int object_depth_ = 0;
+        bool should_stop_ = false;
     };
 
     std::unique_ptr<JsonHandler> handler_;

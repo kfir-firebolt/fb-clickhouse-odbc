@@ -104,7 +104,7 @@ bool JsonWithNamesAndTypesResultSet::JsonHandler::end_object() {
         } else if (message_type_ == "DATA") {
             reading_data_ = false;
         } else if (message_type_ == "FINISH_SUCCESSFULLY") {
-            should_stop_ = true;  // Signal to stop parsing after this object
+            finished_json = true;  // Signal to stop parsing after this object
         }
         should_stop_ = true;  // Signal to stop parsing after this object
         message_type_.clear();
@@ -165,7 +165,7 @@ JsonWithNamesAndTypesResultSet::JsonWithNamesAndTypesResultSet(
     handler_ = std::make_unique<JsonHandler>(*this, timezone);
     
     size_t iterations = 0;
-    while (!json_stream_.eof() && !json_stream_.fail() && iterations++ < 3) {
+    while (!json_stream_.eof() && !json_stream_.fail() && iterations++ < 3 && !handler_->finished_json) {
         try {
             LOG("Starting to parse JSON object");
             nlohmann::json::sax_parse(json_stream_, handler_.get());

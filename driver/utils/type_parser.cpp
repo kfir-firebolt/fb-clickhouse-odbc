@@ -33,6 +33,21 @@ TypeParser::TypeParser(const std::string & name) : cur_(name.data()), end_(name.
 TypeParser::~TypeParser() = default;
 
 bool TypeParser::parse(TypeAst * type) {
+    if (!type || !cur_ || cur_ > end_)
+        return false;
+
+    // Check for "null" suffix first
+    std::string type_str(cur_, end_ - cur_);
+    size_t null_pos = type_str.find(" null");
+    bool has_null_suffix = (null_pos != std::string::npos);
+    
+    if (has_null_suffix) {
+        // Treat the part before " null" as the type name
+        type_str = type_str.substr(0, null_pos);
+        cur_ = type_str.c_str();
+        end_ = cur_ + type_str.length();
+    }
+
     type_ = type;
     open_elements_.push(type_);
 
@@ -70,6 +85,13 @@ bool TypeParser::parse(TypeAst * type) {
                 return false;
         }
     } while (true);
+
+    // If we found a null suffix, modify the type name to include it
+    if (has_null_suffix && type_->meta == TypeAst::Terminal) {
+        type_->name = type_->name + " null";
+    }
+
+    return true;
 }
 
 TypeParser::Token TypeParser::nextToken() {

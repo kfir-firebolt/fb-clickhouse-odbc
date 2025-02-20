@@ -13,7 +13,18 @@ void ColumnInfo::assignTypeInfo(const TypeAst & ast, const std::string & default
         type_without_parameters = ast.name;
         LOG("Terminal type: " + type_without_parameters);
 
-        switch (convertUnparametrizedTypeNameToTypeId(type_without_parameters)) {
+        // Handle null suffix in the type name
+        size_t null_pos = type_without_parameters.find(" null");
+        if (null_pos != std::string::npos) {
+            type_without_parameters = type_without_parameters.substr(0, null_pos);
+            LOG("Found null suffix, adjusted type: " + type_without_parameters);
+            is_nullable = true;  // Set nullable flag
+        }
+
+        type_without_parameters_id = convertUnparametrizedTypeNameToTypeId(type_without_parameters);
+        LOG("Converted type ID: " + std::to_string(static_cast<int>(type_without_parameters_id)));
+
+        switch (type_without_parameters_id) {
             case DataSourceTypeId::Timestamp: {
                 LOG("Processing Timestamp type");
                 // if (ast.elements.size() != 0 && ast.elements.size() != 1)

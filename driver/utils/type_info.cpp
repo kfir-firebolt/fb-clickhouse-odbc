@@ -1,9 +1,10 @@
 #include "driver/utils/type_info.h"
+#include "driver/driver.h"
+#include <algorithm>
 
 #include <Poco/String.h>
 
 #include <stdexcept>
-#include <driver/driver.h>
 // #include <sys/syslog.h>
 
 // sql_type_name is the name of the type as returned by the SQL_DESC_TYPE_NAME field of ODBC.
@@ -14,7 +15,7 @@ const std::map<std::string, TypeInfo> types_g = {
     {"bigint", TypeInfo {"bigint", false, SQL_BIGINT, 1 + 19, 8}},
     {"real", TypeInfo {"real", false, SQL_REAL, 7, 4}},
     // TODO PG returns SQL_FLOAT for double.
-    {"double", TypeInfo {"float8", false, SQL_FLOAT, 15, 8}},
+    {"double precision", TypeInfo {"double precision", false, SQL_FLOAT, 15, 8}},
     {"numeric", TypeInfo {"numeric", false, SQL_NUMERIC, 1 + 2 + 38, 16}}, // -0.
     {"text", TypeInfo {"text", true, SQL_LONGVARCHAR, TypeInfo::string_max_size, TypeInfo::string_max_size}},
     {"date", TypeInfo {"DATE", true, SQL_TYPE_DATE, 10, 6}},
@@ -27,39 +28,87 @@ const std::map<std::string, TypeInfo> types_g = {
 };
 
 
-DataSourceTypeId convertUnparametrizedTypeNameToTypeId(const std::string & type_name) {
-    //syslog( LOG_INFO, "kfirkfir: in function convertUnparametrizedTypeNameToTypeId: %s", type_name.c_str());
+DataSourceTypeId convertUnparametrizedTypeNameToTypeId(const std::string & type) {
+    LOG("Converting type: " + type);
+    
+    // Convert to lowercase and remove " null" suffix if present
+    std::string base_type = type;
+    std::transform(base_type.begin(), base_type.end(), base_type.begin(), ::tolower);
+    
+    size_t null_pos = base_type.find(" null");
+    if (null_pos != std::string::npos) {
+        base_type = base_type.substr(0, null_pos);
+        LOG("Found null suffix, base type: " + base_type);
+    }
 
-         if (Poco::icompare(type_name, "Date") == 0)        return DataSourceTypeId::Date;
-    else if (Poco::icompare(type_name, "Timestamp") == 0)    return DataSourceTypeId::Timestamp;
-    else if (Poco::icompare(type_name, "TimestampTz") == 0)  return DataSourceTypeId::TimestampTz;
-    else if (Poco::icompare(type_name, "Decimal") == 0)     return DataSourceTypeId::Decimal;
-    else if (Poco::icompare(type_name, "REAL") == 0)     return DataSourceTypeId::Float32;
-    // TODO fix packdb to return real instead of float
-    else if (Poco::icompare(type_name, "FLOAT") == 0)     return DataSourceTypeId::Float32;
-    else if (Poco::icompare(type_name, "INT") == 0)       return DataSourceTypeId::Int32;
-    else if (Poco::icompare(type_name, "BIGINT") == 0)       return DataSourceTypeId::Int64;
-    else if (Poco::icompare(type_name, "Nothing") == 0)     return DataSourceTypeId::Nothing;
-    else if (Poco::icompare(type_name, "String") == 0)      return DataSourceTypeId::String;
-    else if (Poco::icompare(type_name, "Int32") == 0)      return DataSourceTypeId::Int32;
-    else if (Poco::icompare(type_name, "Int64") == 0)      return DataSourceTypeId::Int64;
-    else if (Poco::icompare(type_name, "BOOLEAN") == 0)        return DataSourceTypeId::Boolean;
-    else if (Poco::icompare(type_name, "BOOL") == 0)        return DataSourceTypeId::Boolean;
+    // Integer types
+    if (base_type == "int" || 
+        base_type == "integer" || 
+        base_type == "int32" || 
+        base_type == "int4")           return DataSourceTypeId::Int32;
+        
+    if (base_type == "bigint" || 
+        base_type == "int64" || 
+        base_type == "int8" || 
+        base_type == "long")           return DataSourceTypeId::Int64;
+        
+    if (base_type == "smallint" || 
+        base_type == "int16" || 
+        base_type == "int2")           return DataSourceTypeId::Int16;
+        
+    if (base_type == "tinyint" || 
+        base_type == "int1")           return DataSourceTypeId::Int8;
 
-    else if (Poco::icompare(type_name, "TINYINT") == 0)     return DataSourceTypeId::Int8;
-    else if (Poco::icompare(type_name, "SMALLINT") == 0)    return DataSourceTypeId::Int16;
-    else if (Poco::icompare(type_name, "INT") == 0)         return DataSourceTypeId::Int32;
-    else if (Poco::icompare(type_name, "INTEGER") == 0)     return DataSourceTypeId::Int32;
-    else if (Poco::icompare(type_name, "BIGINT") == 0)      return DataSourceTypeId::Int64;
-    else if (Poco::icompare(type_name, "LONG") == 0)        return DataSourceTypeId::Int64;
-    else if (Poco::icompare(type_name, "FLOAT32") == 0)       return DataSourceTypeId::Float32;
-      else if (Poco::icompare(type_name, "Float64") == 0)     return DataSourceTypeId::Float64;
-      else if (Poco::icompare(type_name, "DOUBLE") == 0)      return DataSourceTypeId::Float64;
-    else if (Poco::icompare(type_name, "VARCHAR") == 0)     return DataSourceTypeId::String;
-    else if (Poco::icompare(type_name, "TEXT") == 0)        return DataSourceTypeId::String;
-    else if (Poco::icompare(type_name, "BYTEA") == 0)        return DataSourceTypeId::Bytea;
-    else if (Poco::icompare(type_name, "ARRAY") == 0)        return DataSourceTypeId::String;
+    // Floating point types
+    if (base_type == "double" || 
+        base_type == "float64" || 
+        base_type == "double precision") return DataSourceTypeId::Float64;
+        
+    if (base_type == "float" || 
+        base_type == "real" || 
+        base_type == "float32")        return DataSourceTypeId::Float32;
 
+    // Date/Time types
+    if (base_type == "timestamp" || 
+        base_type == "datetime")       return DataSourceTypeId::Timestamp;
+        
+    if (base_type == "timestamptz" || 
+        base_type == "datetime64")     return DataSourceTypeId::TimestampTz;
+        
+    if (base_type == "date")          return DataSourceTypeId::Date;
+
+    // String types
+    if (base_type == "text" || 
+        base_type == "string" || 
+        base_type == "varchar" || 
+        base_type == "char" || 
+        base_type == "character varying" || 
+        base_type == "character")      return DataSourceTypeId::String;
+
+    // Boolean types
+    if (base_type == "boolean" || 
+        base_type == "bool")          return DataSourceTypeId::Boolean;
+
+    // Binary types
+    if (base_type == "bytea" || 
+        base_type == "binary" || 
+        base_type == "varbinary")     return DataSourceTypeId::Bytea;
+
+    // Decimal types
+    if (base_type == "decimal" || 
+        base_type == "numeric")       return DataSourceTypeId::Decimal;
+    if (base_type == "decimal32")     return DataSourceTypeId::Decimal32;
+    if (base_type == "decimal64")     return DataSourceTypeId::Decimal64;
+    if (base_type == "decimal128")    return DataSourceTypeId::Decimal128;
+
+    // Special types
+    if (base_type == "nothing" || 
+        base_type == "null")          return DataSourceTypeId::Nothing;
+    
+    // Array types (treat as string for now)
+    if (base_type == "array")         return DataSourceTypeId::String;
+    
+    LOG("Unknown type: " + type + ", returning Unknown");
     return DataSourceTypeId::Unknown;
 }
 
@@ -70,7 +119,7 @@ std::string convertTypeIdToUnparametrizedCanonicalTypeName(DataSourceTypeId type
         case DataSourceTypeId::TimestampTz:  return "TimestampTz";
         case DataSourceTypeId::Decimal:     return "numeric";
         case DataSourceTypeId::Float32:     return "real";
-        case DataSourceTypeId::Float64:     return "double";
+        case DataSourceTypeId::Float64:     return "double precision";
         case DataSourceTypeId::Int32:       return "int";
         case DataSourceTypeId::Int64:       return "bigint";
         case DataSourceTypeId::Nothing:     return "Nothing";
@@ -371,7 +420,7 @@ std::string convertCTypeToDataSourceType(const BoundTypeInfo & type_info) {
             break;
 
         case SQL_C_DOUBLE:
-            type_name = set_nullability("Float64");
+            type_name = set_nullability("double precision");
             break;
 
         case SQL_C_NUMERIC:
@@ -481,7 +530,7 @@ std::string convertSQLTypeToDataSourceType(const BoundTypeInfo & type_info) {
 
         case SQL_FLOAT:
         case SQL_DOUBLE:
-            type_name = set_nullability("double");
+            type_name = set_nullability("double precision");
             break;
 
         case SQL_DECIMAL:
