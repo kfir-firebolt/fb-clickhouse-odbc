@@ -97,11 +97,25 @@ bool TypeParser::parse(TypeAst * type) {
 TypeParser::Token TypeParser::nextToken() {
     for (; cur_ < end_; ++cur_) {
         switch (*cur_) {
-            case ' ':
             case '\n':
             case '\t':
             case '\0':
                 continue;
+
+            case ' ': {
+                // Check if this space is part of a compound type name
+                const char* next = cur_ + 1;
+                while (next < end_ && *next == ' ') next++; // Skip multiple spaces
+                if (next < end_ && isalpha(*next)) {
+                    // Look ahead to see if this is a known compound type
+                    std::string compound = std::string(cur_ - 10, std::min(next + 10, end_));
+                    if (compound.find("double precision") != std::string::npos ||
+                        compound.find("character varying") != std::string::npos) {
+                        continue; // Keep the space for compound types
+                    }
+                }
+                continue; // Skip space otherwise
+            }
 
             case '(':
                 return Token {Token::LPar, std::string(cur_++, 1)};
@@ -128,12 +142,25 @@ TypeParser::Token TypeParser::nextToken() {
 
                 if (isalpha(*cur_)) {
                     for (; cur_ < end_; ++cur_) {
-                        if (!isalpha(*cur_) && !isdigit(*cur_)) {
+                        // Allow spaces within known compound types
+                        if (cur_ + 1 < end_ && *cur_ == ' ' && isalpha(*(cur_ + 1))) {
+                            std::string partial = std::string(st, cur_ + 10);
+                            if (partial.find("double precision") == 0 ||
+                                partial.find("character varying") == 0) {
+                                continue;
+                            }
+                        }
+                        if (!isalpha(*cur_) && !isdigit(*cur_) && *cur_ != ' ') {
                             break;
                         }
                     }
 
-                    return Token {Token::Name, std::string(st, cur_)};
+                    std::string token(st, cur_);
+                    // Trim any trailing spaces
+                    while (!token.empty() && token.back() == ' ') {
+                        token.pop_back();
+                    }
+                    return Token {Token::Name, token};
                 }
 
                 if (isdigit(*cur_)) {
