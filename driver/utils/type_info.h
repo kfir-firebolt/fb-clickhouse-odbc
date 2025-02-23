@@ -419,7 +419,7 @@ struct WireTypeDateAsInt {
     {
     }
 
-    using ContainerIntType = std::uint16_t;
+    using ContainerIntType = std::int32_t;
 
     ContainerIntType value = 0;
     const std::string * timezone;
@@ -431,7 +431,7 @@ struct WireTypeDateTimeAsInt {
     {
     }
 
-    using ContainerIntType = std::uint32_t;
+    using ContainerIntType = std::int64_t;
 
     ContainerIntType value = 0;
     const std::string * timezone;

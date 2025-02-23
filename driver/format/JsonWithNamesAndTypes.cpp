@@ -220,7 +220,7 @@ void JsonWithNamesAndTypesResultSet::readValue(Field & dest, ColumnInfo & column
         return;
     }
 
-    constexpr bool convert_on_fetch_conservatively = true;
+    constexpr bool convert_on_fetch_conservatively = false;
 
     if (convert_on_fetch_conservatively) switch (column_info.type_without_parameters_id) {
         case DataSourceTypeId::Date:        return readValueUsing(WireTypeDateAsInt(column_info.timezone), dest, column_info, value);
@@ -250,27 +250,259 @@ void JsonWithNamesAndTypesResultSet::readValue(Field & dest, ColumnInfo & column
 }
 
 void JsonWithNamesAndTypesResultSet::readValue(WireTypeDateAsInt & dest, ColumnInfo & column_info, const std::string & value) {
-    dest.value = std::stoi(value);
+    LOG("Reading date value (WireTypeDateAsInt): " + value);
+    try {
+        if (std::all_of(value.begin(), value.end(), ::isdigit)) {
+            // If it's a Unix timestamp, convert to days since epoch
+            dest.value = std::stoll(value) / (24 * 60 * 60);
+        } else {
+            // Parse string date
+            std::tm tm = {};
+            std::istringstream ss(value);
+            ss >> std::get_time(&tm, "%Y-%m-%d");
+            if (!ss.fail()) {
+                // Set time to midnight UTC
+                tm.tm_hour = 0;
+                tm.tm_min = 0;
+                tm.tm_sec = 0;
+                
+                // Get current timezone offset
+                time_t now = time(nullptr);
+                //tm.tm_isdst = -1;  // Let system determine DST
+                time_t local_time = std::mktime(&tm);
+                
+                // Convert local time to UTC days
+                dest.value = local_time / (24 * 60 * 60);
+                
+                LOG("Local timestamp: " + std::to_string(local_time) + 
+                    ", Days since epoch: " + std::to_string(dest.value));
+            } else {
+                throw std::runtime_error("Failed to parse date string: " + value);
+            }
+        }
+        LOG("Converted date value to days since epoch: " + std::to_string(dest.value));
+    } catch (const std::exception& e) {
+        LOG("Error converting date: " + std::string(e.what()));
+        throw;
+    }
 }
 
 void JsonWithNamesAndTypesResultSet::readValue(WireTypeDateTimeAsInt & dest, ColumnInfo & column_info, const std::string & value) {
-    dest.value = std::stoll(value);
+    LOG("Reading datetime value: " + value);
+    try {
+        if (std::all_of(value.begin(), value.end(), ::isdigit)) {
+            dest.value = std::stoll(value);
+        } else {
+            // Parse string timestamp
+            std::tm tm = {};
+            std::istringstream ss(value);
+            ss >> std::get_time(&tm, "%Y-%m-%d %H:%M:%S");
+            if (ss.fail()) {
+                ss.clear();
+                ss.str(value);
+                ss >> std::get_time(&tm, "%Y-%m-%d");
+            }
+            if (!ss.fail()) {
+                dest.value = std::mktime(&tm);
+            } else {
+                throw std::runtime_error("Failed to parse datetime string: " + value);
+            }
+        }
+        LOG("Converted datetime value: " + std::to_string(dest.value));
+    } catch (const std::exception& e) {
+        LOG("Error converting datetime: " + std::string(e.what()));
+        throw;
+    }
 }
 
 void JsonWithNamesAndTypesResultSet::readValue(WireTypeDateTime64AsInt & dest, ColumnInfo & column_info, const std::string & value) {
-    dest.value = std::stoll(value);
+    LOG("Reading datetime64 value: " + value);
+    try {
+        if (std::all_of(value.begin(), value.end(), ::isdigit)) {
+            // For DateTime64, we need to convert to seconds if it's a Unix timestamp
+            dest.value = std::stoll(value);
+        } else {
+            // Use the same parsing as regular datetime
+            std::tm tm = {};
+            std::istringstream ss(value);
+            ss >> std::get_time(&tm, "%Y-%m-%d %H:%M:%S");
+            if (ss.fail()) {
+                ss.clear();
+                ss.str(value);
+                ss >> std::get_time(&tm, "%Y-%m-%d");
+            }
+            if (!ss.fail()) {
+                dest.value = std::mktime(&tm);
+            } else {
+                throw std::runtime_error("Failed to parse datetime64 string: " + value);
+            }
+        }
+        LOG("Converted datetime64 value: " + std::to_string(dest.value));
+    } catch (const std::exception& e) {
+        LOG("Error converting datetime64: " + std::string(e.what()));
+        throw;
+    }
 }
 
 void JsonWithNamesAndTypesResultSet::readValue(DataSourceType<DataSourceTypeId::Date> & dest, ColumnInfo & column_info, const std::string & value) {
-    value_manip::from_value<std::string>::template to_value<DataSourceType<DataSourceTypeId::Date>>::convert(value, dest);
+    LOG("Reading date value: " + value);
+    try {
+        std::time_t timestamp;
+        if (std::all_of(value.begin(), value.end(), ::isdigit)) {
+            // Convert Unix timestamp to time_t
+            timestamp = std::stoll(value);
+        } else {
+            // Parse string date
+            std::tm tm = {};
+            std::istringstream ss(value);
+            ss >> std::get_time(&tm, "%Y-%m-%d");
+            if (!ss.fail()) {
+                // Set time to midnight
+                tm.tm_hour = 0;
+                tm.tm_min = 0;
+                tm.tm_sec = 0;
+                timestamp = std::mktime(&tm);
+            } else {
+                throw std::runtime_error("Failed to parse date string: " + value);
+            }
+        }
+
+        // Convert to SQL date structure
+        std::tm* tm = std::localtime(&timestamp);
+        if (tm) {
+            dest.value.year = tm->tm_year + 1900;
+            dest.value.month = tm->tm_mon + 1;
+            dest.value.day = tm->tm_mday;
+        } else {
+            throw std::runtime_error("Failed to convert date: " + value);
+        }
+        
+        LOG("Converted date value to: " + 
+            std::to_string(dest.value.year) + "-" + 
+            std::to_string(dest.value.month) + "-" + 
+            std::to_string(dest.value.day));
+    } catch (const std::exception& e) {
+        LOG("Error converting date: " + std::string(e.what()));
+        throw;
+    }
 }
 
 void JsonWithNamesAndTypesResultSet::readValue(DataSourceType<DataSourceTypeId::Timestamp> & dest, ColumnInfo & column_info, const std::string & value) {
-    value_manip::from_value<std::string>::template to_value<DataSourceType<DataSourceTypeId::Timestamp>>::convert(value, dest);
+    LOG("Reading timestamp value: " + value);
+    try {
+        std::time_t timestamp;
+        if (std::all_of(value.begin(), value.end(), ::isdigit)) {
+            // Convert Unix timestamp to time_t
+            timestamp = std::stoll(value);
+        } else {
+            // Parse string timestamp
+            std::tm tm = {};
+            std::istringstream ss(value);
+            ss >> std::get_time(&tm, "%Y-%m-%d %H:%M:%S");
+            if (ss.fail()) {
+                ss.clear();
+                ss.str(value);
+                ss >> std::get_time(&tm, "%Y-%m-%d");
+            }
+            if (!ss.fail()) {
+                timestamp = std::mktime(&tm);
+            } else {
+                throw std::runtime_error("Failed to parse timestamp string: " + value);
+            }
+        }
+
+        // Convert to SQL timestamp structure
+        std::tm* tm = std::localtime(&timestamp);
+        if (tm) {
+            dest.value.year = tm->tm_year + 1900;
+            dest.value.month = tm->tm_mon + 1;
+            dest.value.day = tm->tm_mday;
+            dest.value.hour = tm->tm_hour;
+            dest.value.minute = tm->tm_min;
+            dest.value.second = tm->tm_sec;
+            dest.value.fraction = 0;
+        } else {
+            throw std::runtime_error("Failed to convert timestamp: " + value);
+        }
+        
+        LOG("Converted timestamp value to: " + 
+            std::to_string(dest.value.year) + "-" + 
+            std::to_string(dest.value.month) + "-" + 
+            std::to_string(dest.value.day) + " " + 
+            std::to_string(dest.value.hour) + ":" + 
+            std::to_string(dest.value.minute) + ":" + 
+            std::to_string(dest.value.second));
+    } catch (const std::exception& e) {
+        LOG("Error converting timestamp: " + std::string(e.what()));
+        throw;
+    }
 }
 
 void JsonWithNamesAndTypesResultSet::readValue(DataSourceType<DataSourceTypeId::TimestampTz> & dest, ColumnInfo & column_info, const std::string & value) {
-    value_manip::from_value<std::string>::template to_value<DataSourceType<DataSourceTypeId::TimestampTz>>::convert(value, dest);
+    LOG("Reading timestamptz value: " + value + " (timezone: " + column_info.timezone + ")");
+    try {
+        std::time_t timestamp;
+        if (std::all_of(value.begin(), value.end(), ::isdigit)) {
+            // Convert Unix timestamp to time_t
+            timestamp = std::stoll(value);
+        } else {
+            // Parse string timestamp
+            std::tm tm = {};
+            std::istringstream ss(value);
+            ss >> std::get_time(&tm, "%Y-%m-%d %H:%M:%S");
+            if (ss.fail()) {
+                ss.clear();
+                ss.str(value);
+                ss >> std::get_time(&tm, "%Y-%m-%d");
+            }
+            if (!ss.fail()) {
+                // Set TZ environment variable temporarily
+                std::string old_tz;
+                if (const char* current_tz = std::getenv("TZ")) {
+                    old_tz = current_tz;
+                }
+                setenv("TZ", column_info.timezone.c_str(), 1);
+                tzset();
+                
+                timestamp = std::mktime(&tm);
+                
+                // Restore original TZ
+                if (!old_tz.empty()) {
+                    setenv("TZ", old_tz.c_str(), 1);
+                } else {
+                    unsetenv("TZ");
+                }
+                tzset();
+            } else {
+                throw std::runtime_error("Failed to parse timestamptz string: " + value);
+            }
+        }
+
+        // Convert to SQL timestamp structure
+        std::tm* tm = std::localtime(&timestamp);
+        if (tm) {
+            dest.value.year = tm->tm_year + 1900;
+            dest.value.month = tm->tm_mon + 1;
+            dest.value.day = tm->tm_mday;
+            dest.value.hour = tm->tm_hour;
+            dest.value.minute = tm->tm_min;
+            dest.value.second = tm->tm_sec;
+            dest.value.fraction = 0;
+        } else {
+            throw std::runtime_error("Failed to convert timestamptz: " + value);
+        }
+        
+        LOG("Converted timestamptz value to: " + 
+            std::to_string(dest.value.year) + "-" + 
+            std::to_string(dest.value.month) + "-" + 
+            std::to_string(dest.value.day) + " " + 
+            std::to_string(dest.value.hour) + ":" + 
+            std::to_string(dest.value.minute) + ":" + 
+            std::to_string(dest.value.second));
+    } catch (const std::exception& e) {
+        LOG("Error converting timestamptz: " + std::string(e.what()));
+        throw;
+    }
 }
 
 void JsonWithNamesAndTypesResultSet::readValue(DataSourceType<DataSourceTypeId::Decimal> & dest, ColumnInfo & column_info, const std::string & value) {

@@ -19,8 +19,8 @@ const std::map<std::string, TypeInfo> types_g = {
     {"numeric", TypeInfo {"numeric", false, SQL_NUMERIC, 1 + 2 + 38, 16}}, // -0.
     {"text", TypeInfo {"text", true, SQL_LONGVARCHAR, TypeInfo::string_max_size, TypeInfo::string_max_size}},
     {"date", TypeInfo {"DATE", true, SQL_TYPE_DATE, 10, 6}},
-    {"timestamp", TypeInfo {"TIMESTAMP", true, SQL_TYPE_TIMESTAMP, 19, 16}},
-    {"timestampntz", TypeInfo {"TIMESTAMP", true, SQL_TYPE_TIMESTAMP, 19, 16}},
+    {"timestamp", TypeInfo {"TIMESTAMP", true, SQL_TYPE_TIMESTAMP, 29, 16}},
+    {"timestampntz", TypeInfo {"TIMESTAMP", true, SQL_TYPE_TIMESTAMP, 29, 16}},
     {"timestamptz", TypeInfo {"TIMESTAMPTZ", true, SQL_TYPE_TIMESTAMP, 29, 16}},
     {"array", TypeInfo {"array", true, SQL_VARCHAR, TypeInfo::string_max_size, TypeInfo::string_max_size}},
     {"Nothing", TypeInfo {"null", true, SQL_TYPE_NULL, 1, 1}},
