@@ -8,17 +8,18 @@ const std::string::size_type initial_string_capacity_g = std::string{}.capacity(
 
 void ColumnInfo::assignTypeInfo(const TypeAst & ast, const std::string & default_timezone) {
     LOG("Assigning type info for column: " + name + ", type: " + type);
+
+    is_nullable = ast.nullable;
     
     if (ast.meta == TypeAst::Terminal) {
         type_without_parameters = ast.name;
         LOG("Terminal type: " + type_without_parameters);
 
         // Handle null suffix in the type name
-        size_t null_pos = type_without_parameters.find(" null");
+        size_t null_pos = type.find(" null");
         if (null_pos != std::string::npos) {
-            type_without_parameters = type_without_parameters.substr(0, null_pos);
-            LOG("Found null suffix, adjusted type: " + type_without_parameters);
-            is_nullable = true;  // Set nullable flag
+            type = type.substr(0, null_pos);
+            LOG("Found null suffix, adjusted type: " + type);
         }
 
         type_without_parameters_id = convertUnparametrizedTypeNameToTypeId(type_without_parameters);

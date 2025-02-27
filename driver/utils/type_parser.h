@@ -23,6 +23,8 @@ struct TypeAst {
     size_t size = 0;
     /// Subelements of the type.
     std::list<TypeAst> elements;
+    /// Nullability
+    bool nullable = false;
 };
 
 

@@ -215,6 +215,7 @@ void JsonWithNamesAndTypesResultSet::readValue(Field & dest, ColumnInfo & column
     value_manip::to_null(value_);
 
     if (isNull(value)) {
+        LOG("Found null value in column '" + column_info.name + "' with type '" + column_info.type + "' with nullability=" + std::to_string(column_info.is_nullable));
         dest.data = DataSourceType<DataSourceTypeId::Nothing>{};
         string_pool.put(std::move(value_));
         return;
@@ -254,26 +255,18 @@ void JsonWithNamesAndTypesResultSet::readValue(WireTypeDateAsInt & dest, ColumnI
     try {
         if (std::all_of(value.begin(), value.end(), ::isdigit)) {
             // If it's a Unix timestamp, convert to days since epoch
-            dest.value = std::stoll(value) / (24 * 60 * 60);
+            dest.value = static_cast<WireTypeDateAsInt::ContainerIntType>(std::stoll(value) / (24 * 60 * 60));
         } else {
             // Parse string date
             std::tm tm = {};
             std::istringstream ss(value);
             ss >> std::get_time(&tm, "%Y-%m-%d");
             if (!ss.fail()) {
-                // Set time to midnight UTC
                 tm.tm_hour = 0;
                 tm.tm_min = 0;
                 tm.tm_sec = 0;
-                
-                // Get current timezone offset
-                time_t now = time(nullptr);
-                //tm.tm_isdst = -1;  // Let system determine DST
                 time_t local_time = std::mktime(&tm);
-                
-                // Convert local time to UTC days
-                dest.value = local_time / (24 * 60 * 60);
-                
+                dest.value = static_cast<WireTypeDateAsInt::ContainerIntType>(local_time / (24 * 60 * 60));
                 LOG("Local timestamp: " + std::to_string(local_time) + 
                     ", Days since epoch: " + std::to_string(dest.value));
             } else {
@@ -443,10 +436,8 @@ void JsonWithNamesAndTypesResultSet::readValue(DataSourceType<DataSourceTypeId::
     try {
         std::time_t timestamp;
         if (std::all_of(value.begin(), value.end(), ::isdigit)) {
-            // Convert Unix timestamp to time_t
             timestamp = std::stoll(value);
         } else {
-            // Parse string timestamp
             std::tm tm = {};
             std::istringstream ss(value);
             ss >> std::get_time(&tm, "%Y-%m-%d %H:%M:%S");
@@ -456,22 +447,30 @@ void JsonWithNamesAndTypesResultSet::readValue(DataSourceType<DataSourceTypeId::
                 ss >> std::get_time(&tm, "%Y-%m-%d");
             }
             if (!ss.fail()) {
-                // Set TZ environment variable temporarily
-                std::string old_tz;
-                if (const char* current_tz = std::getenv("TZ")) {
-                    old_tz = current_tz;
-                }
-                setenv("TZ", column_info.timezone.c_str(), 1);
-                tzset();
-                
+                // Handle timezone in a Windows-compatible way
+                #ifdef _WIN32
+                    _putenv_s("TZ", column_info.timezone.c_str());
+                #else
+                    std::string old_tz;
+                    if (const char* current_tz = std::getenv("TZ")) {
+                        old_tz = current_tz;
+                    }
+                    setenv("TZ", column_info.timezone.c_str(), 1);
+                #endif
+                tzset(); // Use _tzset() which works on both Windows and Unix
+
                 timestamp = std::mktime(&tm);
-                
-                // Restore original TZ
-                if (!old_tz.empty()) {
-                    setenv("TZ", old_tz.c_str(), 1);
-                } else {
-                    unsetenv("TZ");
-                }
+
+                // Restore original timezone
+                #ifdef _WIN32
+                    _putenv_s("TZ", "");
+                #else
+                    if (!old_tz.empty()) {
+                        setenv("TZ", old_tz.c_str(), 1);
+                    } else {
+                        unsetenv("TZ");
+                    }
+                #endif
                 tzset();
             } else {
                 throw std::runtime_error("Failed to parse timestamptz string: " + value);
@@ -481,12 +480,12 @@ void JsonWithNamesAndTypesResultSet::readValue(DataSourceType<DataSourceTypeId::
         // Convert to SQL timestamp structure
         std::tm* tm = std::localtime(&timestamp);
         if (tm) {
-            dest.value.year = tm->tm_year + 1900;
-            dest.value.month = tm->tm_mon + 1;
-            dest.value.day = tm->tm_mday;
-            dest.value.hour = tm->tm_hour;
-            dest.value.minute = tm->tm_min;
-            dest.value.second = tm->tm_sec;
+            dest.value.year = static_cast<SQLSMALLINT>(tm->tm_year + 1900);
+            dest.value.month = static_cast<SQLUSMALLINT>(tm->tm_mon + 1);
+            dest.value.day = static_cast<SQLUSMALLINT>(tm->tm_mday);
+            dest.value.hour = static_cast<SQLUSMALLINT>(tm->tm_hour);
+            dest.value.minute = static_cast<SQLUSMALLINT>(tm->tm_min);
+            dest.value.second = static_cast<SQLUSMALLINT>(tm->tm_sec);
             dest.value.fraction = 0;
         } else {
             throw std::runtime_error("Failed to convert timestamptz: " + value);

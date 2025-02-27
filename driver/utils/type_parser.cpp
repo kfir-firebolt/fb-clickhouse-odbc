@@ -46,6 +46,7 @@ bool TypeParser::parse(TypeAst * type) {
         type_str = type_str.substr(0, null_pos);
         cur_ = type_str.c_str();
         end_ = cur_ + type_str.length();
+        type->nullable = true;
     }
 
     type_ = type;
