@@ -257,6 +257,42 @@ string processFunction(const StringView seq, Lexer & lex) {
         lex.Consume();
         return "replaceRegexpOne(" + param + ", '^\\\\s+', '')";
 
+    } else if (fn.type == Token::WEEK) {
+        if (!lex.Match(Token::LPARENT))
+            return seq.to_string();
+
+        auto param = processIdentOrFunction(seq, lex /*, false*/);
+        if (param.empty())
+            return seq.to_string();
+        lex.Consume();
+        return "extract(week from "+ param +")";
+    } else if (fn.type == Token::YEAR) {
+        if (!lex.Match(Token::LPARENT))
+            return seq.to_string();
+
+        auto param = processIdentOrFunction(seq, lex /*, false*/);
+        if (param.empty())
+            return seq.to_string();
+        lex.Consume();
+        return "extract(year from "+ param +")";
+    } else if (fn.type == Token::SQL_TSI_QUARTER) {
+        if (!lex.Match(Token::LPARENT))
+            return seq.to_string();
+
+        auto param = processIdentOrFunction(seq, lex /*, false*/);
+        if (param.empty())
+            return seq.to_string();
+        lex.Consume();
+        return "extract(quarter from "+ param +")";
+    } else if (fn.type == Token::DAYOFMONTH) {
+        if (!lex.Match(Token::LPARENT))
+            return seq.to_string();
+
+        auto param = processIdentOrFunction(seq, lex /*, false*/);
+        if (param.empty())
+            return seq.to_string();
+        lex.Consume();
+        return "extract(day from "+ param +")";
     } else if (fn.type == Token::DAYOFWEEK) {
         if (!lex.Match(Token::LPARENT))
             return seq.to_string();
@@ -265,18 +301,16 @@ string processFunction(const StringView seq, Lexer & lex) {
         if (param.empty())
             return seq.to_string();
         lex.Consume();
-        return "if(toDayOfWeek(" + param + ") = 7, 1, toDayOfWeek(" + param + ") + 1)";
-/*
-    } else if (fn.type == Token::DAYOFYEAR) { // Supported by ClickHouse since 18.13.0
+        return "extract(dow from "+ param +")";
+    } else if (fn.type == Token::DAYOFYEAR) {
         if (!lex.Match(Token::LPARENT))
             return seq.to_string();
 
-        auto param = processIdentOrFunction(seq, lex);
+        auto param = processIdentOrFunction(seq, lex /*, false*/);
         if (param.empty())
             return seq.to_string();
         lex.Consume();
-        return "( toRelativeDayNum(" + param + ") - toRelativeDayNum(toStartOfYear(" + param + ")) + 1 )";
-*/
+        return "extract(doy from "+ param +")";
     } else if (function_map_strip_params.find(fn.type) != function_map_strip_params.end()) {
         string result = function_map_strip_params.at(fn.type);
 
