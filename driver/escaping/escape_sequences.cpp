@@ -281,6 +281,42 @@ string processFunction(const StringView seq, Lexer & lex) {
             return seq.to_string();
         lex.Consume();
         return "extract(year from "+ param +")";
+    } else if (fn.type == Token::MONTH) {
+        if (!lex.Match(Token::LPARENT))
+            return seq.to_string();
+
+        auto param = processIdentOrFunction(seq, lex /*, false*/);
+        if (param.empty())
+            return seq.to_string();
+        lex.Consume();
+        return "extract(month from "+ param +")";
+    } else if (fn.type == Token::SECOND) {
+        if (!lex.Match(Token::LPARENT))
+            return seq.to_string();
+
+        auto param = processIdentOrFunction(seq, lex /*, false*/);
+        if (param.empty())
+            return seq.to_string();
+        lex.Consume();
+        return "extract(second from "+ param +")";
+    } else if (fn.type == Token::MINUTE) {
+        if (!lex.Match(Token::LPARENT))
+            return seq.to_string();
+
+        auto param = processIdentOrFunction(seq, lex /*, false*/);
+        if (param.empty())
+            return seq.to_string();
+        lex.Consume();
+        return "extract(minute from "+ param +")";
+    } else if (fn.type == Token::HOUR) {
+        if (!lex.Match(Token::LPARENT))
+            return seq.to_string();
+
+        auto param = processIdentOrFunction(seq, lex /*, false*/);
+        if (param.empty())
+            return seq.to_string();
+        lex.Consume();
+        return "extract(hour from "+ param +")";
     } else if (fn.type == Token::SQL_TSI_QUARTER) {
         if (!lex.Match(Token::LPARENT))
             return seq.to_string();

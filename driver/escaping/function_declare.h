@@ -67,11 +67,11 @@
     DECLARE2(DAYOFWEEK, ""), // special handling
     DECLARE2(DAYOFYEAR, ""), // special handling
     DECLARE2(EXTRACT, "EXTRACT"), // Do not touch extract inside {fn ... }
-    DECLARE2(HOUR, "toHour"),
-    DECLARE2(MINUTE, "toMinute"),
-    DECLARE2(MONTH, "toMonth"),
+    DECLARE2(HOUR, ""), // special handling
+    DECLARE2(MINUTE, ""), // special handling
+    DECLARE2(MONTH, ""), // special handling
     DECLARE2(NOW, "now"),
-    DECLARE2(SECOND, "toSecond"),
+    DECLARE2(SECOND, ""), // special handling
     DECLARE2(TIMESTAMPADD, ""), // special handling
     DECLARE2(TIMESTAMPDIFF, "dateDiff"),
     DECLARE2(WEEK, ""), // special handling
