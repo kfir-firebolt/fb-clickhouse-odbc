@@ -7,6 +7,7 @@
 */
 #include "driver/escaping/escape_sequences.h"
 #include "driver/escaping/lexer.h"
+#include "driver/driver.h"
 
 #include <iostream>
 #include <map>
@@ -258,12 +259,17 @@ string processFunction(const StringView seq, Lexer & lex) {
         return "replaceRegexpOne(" + param + ", '^\\\\s+', '')";
 
     } else if (fn.type == Token::WEEK) {
-        if (!lex.Match(Token::LPARENT))
+        LOG("INSIDE WEEK FUNCTION ESCAPE SEQUENCE");
+        if (!lex.Match(Token::LPARENT)) {
+            LOG("WEEK function without parentheses");
             return seq.to_string();
+        }
 
         auto param = processIdentOrFunction(seq, lex /*, false*/);
-        if (param.empty())
+        if (param.empty()) {
+            LOG("WEEK function with emtpy parameter");
             return seq.to_string();
+        }
         lex.Consume();
         return "extract(week from "+ param +")";
     } else if (fn.type == Token::YEAR) {

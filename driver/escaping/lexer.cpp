@@ -170,24 +170,24 @@ Token Lexer::NextToken() {
             default: {
                 const char * st = cur_;
 
-                if (isalpha(*cur_) || *cur_ == '_' || *cur_ == '`') {
+                if (isalpha(*cur_) || *cur_ == '_' || *cur_ == '"') {
                     bool has_dot = false;
-                    bool has_backtick = false;
+                    bool has_double_quotes = false;
 
                     while (cur_ < end_) {
-                        if (*cur_ == '`') {
-                            has_backtick = true;
-                            bool found_closing_backtick = false;
+                        if (*cur_ == '"') {
+                            has_double_quotes = true;
+                            bool found_closing_double_quotes = false;
 
                             for (++cur_; cur_ < end_; ++cur_) {
-                                if (*cur_ == '`') {
-                                    found_closing_backtick = true;
+                                if (*cur_ == '"') {
+                                    found_closing_double_quotes = true;
                                     ++cur_;
                                     break;
                                 }
                             }
 
-                            if (!found_closing_backtick) {
+                            if (!found_closing_double_quotes) {
                                 return Token {Token::INVALID, StringView(st, cur_)};
                             }
                         }
@@ -211,7 +211,7 @@ Token Lexer::NextToken() {
                         }
                     }
 
-                    if (has_dot || has_backtick) {
+                    if (has_dot || has_double_quotes) {
                         return Token {Token::IDENT, StringView(st, cur_)};
                     }
                     else {
