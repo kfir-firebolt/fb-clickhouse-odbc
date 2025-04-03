@@ -1115,7 +1115,7 @@ SQLRETURN SQL_API EXPORTED_FUNCTION_MAYBE_W(SQLColumns)(
                  ", 0 AS SQL_DATA_TYPE"     // 13
                  ", 0 AS SQL_DATETIME_SUB"  // 14
                  ", CHARACTER_OCTET_LENGTH AS CHAR_OCTET_LENGTH" // 15
-                 ", ORDINAL_POSITION AS ORDINAL_POSITION"  // 16
+                 ", coalesce(ORDINAL_POSITION) AS ORDINAL_POSITION"  // 16
                  ", IS_NULLABLE AS IS_NULLABLE"       // 17
                  " FROM information_schema.columns"
                  " WHERE (1 == 1)";

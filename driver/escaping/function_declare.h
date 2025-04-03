@@ -72,10 +72,10 @@
     DECLARE2(MONTH, ""), // special handling
     DECLARE2(NOW, "now"),
     DECLARE2(SECOND, ""), // special handling
-    DECLARE2(TIMESTAMPADD, ""), // special handling
-    DECLARE2(TIMESTAMPDIFF, "dateDiff"),
+    DECLARE2(TIMESTAMPADD, "date_add"), // special handling
+    DECLARE2(TIMESTAMPDIFF, "date_diff"),
     DECLARE2(WEEK, ""), // special handling
-    DECLARE2(SQL_TSI_QUARTER, ""), // special handling
+    //DECLARE2(SQL_TSI_QUARTER, ""), // special handling
     DECLARE2(YEAR, ""), // special handling
 
     // DECLARE2(DATABASE, ""),

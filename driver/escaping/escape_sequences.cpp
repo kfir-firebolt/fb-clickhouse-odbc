@@ -45,7 +45,7 @@ const std::map<const Token::Type, const std::string> function_map_strip_params {
 };
 
 const std::map<const Token::Type, const std::string> literal_map {
-    // {Token::SQL_TSI_FRAC_SECOND, ""},
+    {Token::SQL_TSI_FRAC_SECOND, "'millisecond'"},
     {Token::SQL_TSI_SECOND, "'second'"},
     {Token::SQL_TSI_MINUTE, "'minute'"},
     {Token::SQL_TSI_HOUR, "'hour'"},
@@ -190,41 +190,41 @@ string processFunction(const StringView seq, Lexer & lex) {
 
         return result;
 
-    } else if (fn.type == Token::TIMESTAMPADD) {
-        string result;
-        if (!lex.Match(Token::LPARENT))
-            return seq.to_string();
-
-        Token type = lex.Consume();
-        if (timeadd_func_map.find(type.type) == timeadd_func_map.end())
-            return seq.to_string();
-        string func = timeadd_func_map.at(type.type);
-        if (!lex.Match(Token::COMMA))
-            return seq.to_string();
-        auto ramount = processIdentOrFunction(seq, lex);
-        if (ramount.empty())
-            return seq.to_string();
-
-        while (lex.Match(Token::SPACE)) {
-        }
-
-        if (!lex.Match(Token::COMMA))
-            return seq.to_string();
-
-
-        auto rdate = processIdentOrFunction(seq, lex);
-        if (rdate.empty())
-            return seq.to_string();
-
-        if (!func.empty()) {
-            while (lex.Match(Token::SPACE)) {
-            }
-            if (!lex.Match(Token::RPARENT)) {
-                return seq.to_string();
-            }
-            result = func + "(" + rdate + ", " + ramount + ")";
-        }
-        return result;
+    // } else if (fn.type == Token::TIMESTAMPADD) {
+    //     string result;
+    //     if (!lex.Match(Token::LPARENT))
+    //         return seq.to_string();
+    //
+    //     Token type = lex.Consume();
+    //     if (timeadd_func_map.find(type.type) == timeadd_func_map.end())
+    //         return seq.to_string();
+    //     string func = timeadd_func_map.at(type.type);
+    //     if (!lex.Match(Token::COMMA))
+    //         return seq.to_string();
+    //     auto ramount = processIdentOrFunction(seq, lex);
+    //     if (ramount.empty())
+    //         return seq.to_string();
+    //
+    //     while (lex.Match(Token::SPACE)) {
+    //     }
+    //
+    //     if (!lex.Match(Token::COMMA))
+    //         return seq.to_string();
+    //
+    //
+    //     auto rdate = processIdentOrFunction(seq, lex);
+    //     if (rdate.empty())
+    //         return seq.to_string();
+    //
+    //     if (!func.empty()) {
+    //         while (lex.Match(Token::SPACE)) {
+    //         }
+    //         if (!lex.Match(Token::RPARENT)) {
+    //             return seq.to_string();
+    //         }
+    //         result = func + "(" + rdate + ", " + ramount + ")";
+    //     }
+    //     return result;
 
     } else if (fn.type == Token::LOCATE) {
         string result;
