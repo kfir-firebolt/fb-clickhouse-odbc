@@ -24,7 +24,7 @@
     // DECLARE2(RADIANS, ""),
     DECLARE2(RAND, "rand"),
     DECLARE2(ROUND, "round"),
-    // DECLARE2(SIGN, ""),
+    DECLARE2(SIGN, ""), // Special handling
     DECLARE2(SIN, "sin"),
     DECLARE2(SQRT, "sqrt"),
     DECLARE2(TAN, "tan"),

@@ -190,42 +190,16 @@ string processFunction(const StringView seq, Lexer & lex) {
 
         return result;
 
-    // } else if (fn.type == Token::TIMESTAMPADD) {
-    //     string result;
-    //     if (!lex.Match(Token::LPARENT))
-    //         return seq.to_string();
-    //
-    //     Token type = lex.Consume();
-    //     if (timeadd_func_map.find(type.type) == timeadd_func_map.end())
-    //         return seq.to_string();
-    //     string func = timeadd_func_map.at(type.type);
-    //     if (!lex.Match(Token::COMMA))
-    //         return seq.to_string();
-    //     auto ramount = processIdentOrFunction(seq, lex);
-    //     if (ramount.empty())
-    //         return seq.to_string();
-    //
-    //     while (lex.Match(Token::SPACE)) {
-    //     }
-    //
-    //     if (!lex.Match(Token::COMMA))
-    //         return seq.to_string();
-    //
-    //
-    //     auto rdate = processIdentOrFunction(seq, lex);
-    //     if (rdate.empty())
-    //         return seq.to_string();
-    //
-    //     if (!func.empty()) {
-    //         while (lex.Match(Token::SPACE)) {
-    //         }
-    //         if (!lex.Match(Token::RPARENT)) {
-    //             return seq.to_string();
-    //         }
-    //         result = func + "(" + rdate + ", " + ramount + ")";
-    //     }
-    //     return result;
+    } else if (fn.type == Token::SIGN) {
+        if (!lex.Match(Token::LPARENT))
+            return seq.to_string();
 
+        auto param = processIdentOrFunction(seq, lex);
+        if (param.empty())
+            return seq.to_string();
+        lex.Consume();
+
+        return "CASE WHEN " + param + " > 0 THEN 1 WHEN " + param + " < 0 THEN -1 ELSE 0 END";
     } else if (fn.type == Token::LOCATE) {
         string result;
         if (!lex.Match(Token::LPARENT))
@@ -528,3 +502,4 @@ std::string replaceEscapeSequences(const std::string & query) {
 
     return ret;
 }
+
